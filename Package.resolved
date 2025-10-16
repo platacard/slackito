@@ -1,0 +1,15 @@
+{
+  "originHash" : "554db6a3d7bb059b4eeb7f7d6594dd9f593b0cfc8baf6dba0e17b911025c0fda",
+  "pins" : [
+    {
+      "identity" : "cronista",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/platacard/cronista.git",
+      "state" : {
+        "revision" : "1a22b0f330f17e7ccbc60efc611da359df7ee546",
+        "version" : "1.0.0"
+      }
+    }
+  ],
+  "version" : 3
+}
