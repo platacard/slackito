@@ -1,8 +1,8 @@
 import XCTest
-@testable import SlackAPI
+@testable import Slackito
 
 @MainActor
-final class SlackAPITests: XCTestCase {
+final class SlackitoTests: XCTestCase {
     
     func test_BlockBuilderProducesRawJson() throws {
         let message = SlackMessage(channel: "test_channel") {
