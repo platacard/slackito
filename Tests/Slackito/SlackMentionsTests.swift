@@ -1,5 +1,5 @@
 import Testing
-@testable import SlackAPI
+@testable import Slackito
 
 @Suite("SlackMentionsTests")
 struct SlackMentionsTests {
