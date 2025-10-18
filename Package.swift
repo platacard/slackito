@@ -12,7 +12,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/platacard/cronista.git", from: "1.0.2"),
+        .package(url: "https://github.com/platacard/cronista.git", from: "1.0.3"),
     ],
     targets: [
         .target(
