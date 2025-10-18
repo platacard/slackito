@@ -2,14 +2,22 @@
 
 A client written with result builders to work with Slack Web API. A small part of the larger iOS deploy infrastructure at Plata.
 
+## Installation
+
+Add the package to your `Package.swift` file:
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/platacard/slackito.git", from: "1.0.0")
+]
+```
 
 ## Usage
 
-
 ```swift
-let meta = try meta(stage: stage, configPath: bundleId.configPath)
+let meta = try meta(...)
 
-let message = SlackMessage(channel: channel, ts: thread) {
+let message = SlackMessage(channel: "some_channed", ts: "thread_timestamp") {
     MarkdownSection(
         ":gitlab-success: \(meta.jobUrl) of *\(meta.appName) (\(bundleId))* has finished successfully!"
     )
@@ -28,20 +36,22 @@ let message = SlackMessage(channel: channel, ts: thread) {
     }
 }
 
-return message
+try await message.send(as: "slack_token")
 ```
 
 ## Result
 <img width="559" height="140" alt="message_example" src="https://github.com/user-attachments/assets/3794b745-a295-4031-9491-87af0f0feb41" />
 
-## Supported blocks
+### Supported blocks
 
 - Links
 - Field sections
 - User and group mentions
 - Context
 
-## TODO
+### TODO
 
 - Images
 - Tables
+
+> Author: [@havebeenfitz](https://github.com/havebeenfitz)
