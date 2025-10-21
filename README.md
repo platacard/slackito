@@ -51,32 +51,9 @@ try await message.send(as: "slack_token")
 
 ### Attachments
 
-Slackito now supports sending attachments including images, CSV files, and other file types:
+Slackito also supports sending attachments including images, CSV files, and other file types:
 
 ```swift
-// Image attachment from URL
-let imageAttachment = SlackAttachment.image(
-    url: "https://example.com/chart.png",
-    altText: "Sales chart",
-    title: "Monthly Sales Report"
-)
-
-// CSV attachment from URL
-let csvAttachment = SlackAttachment.csv(
-    url: "https://example.com/data.csv",
-    filename: "sales_data.csv",
-    title: "Sales Data"
-)
-
-// File attachment from local data
-let csvData = "name,age\nJohn,30\nJane,25".data(using: .utf8)!
-let csvDataAttachment = SlackAttachment.csv(
-    data: csvData,
-    filename: "users.csv",
-    title: "User Data"
-)
-
-// Send message with attachments
 let message = SlackMessage(
     channel: "reports",
     attachments: [imageAttachment, csvAttachment, csvDataAttachment]
@@ -93,7 +70,7 @@ try await message.send(as: "slack_token")
 
 #### Supported File Types
 
-- **Images**: JPG, JPEG, PNG, GIF
+- **Images**: JPEG, PNG, GIF
 - **Documents**: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX
 - **Data**: CSV, JSON, XML, TXT
 - **Archives**: ZIP
