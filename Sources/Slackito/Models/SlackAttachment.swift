@@ -110,7 +110,6 @@ public enum FileType: String, CaseIterable, Sendable {
     case xlsx = "xlsx"
     case ppt = "ppt"
     case pptx = "pptx"
-    case jpg = "jpg"
     case jpeg = "jpeg"
     case png = "png"
     case gif = "gif"
@@ -122,55 +121,25 @@ public enum FileType: String, CaseIterable, Sendable {
     /// MIME type for the file type
     public var mimeType: String {
         switch self {
-        case .csv: return "text/csv"
-        case .pdf: return "application/pdf"
-        case .txt: return "text/plain"
-        case .json: return "application/json"
-        case .xml: return "application/xml"
-        case .zip: return "application/zip"
-        case .doc: return "application/msword"
-        case .docx: return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        case .xls: return "application/vnd.ms-excel"
-        case .xlsx: return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        case .ppt: return "application/vnd.ms-powerpoint"
-        case .pptx: return "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-        case .jpg, .jpeg: return "image/jpeg"
-        case .png: return "image/png"
-        case .gif: return "image/gif"
-        case .mp4: return "video/mp4"
-        case .mov: return "video/quicktime"
-        case .mp3: return "audio/mpeg"
-        case .wav: return "audio/wav"
-        }
-    }
-    
-    /// Whether this file type is an image
-    public var isImage: Bool {
-        switch self {
-        case .jpg, .jpeg, .png, .gif:
-            return true
-        default:
-            return false
-        }
-    }
-    
-    /// Whether this file type is a video
-    public var isVideo: Bool {
-        switch self {
-        case .mp4, .mov:
-            return true
-        default:
-            return false
-        }
-    }
-    
-    /// Whether this file type is an audio file
-    public var isAudio: Bool {
-        switch self {
-        case .mp3, .wav:
-            return true
-        default:
-            return false
+        case .csv: "text/csv"
+        case .pdf: "application/pdf"
+        case .txt: "text/plain"
+        case .json: "application/json"
+        case .xml: "application/xml"
+        case .zip: "application/zip"
+        case .doc: "application/msword"
+        case .docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        case .xls: "application/vnd.ms-excel"
+        case .xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        case .ppt: "application/vnd.ms-powerpoint"
+        case .pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        case .jpeg: "image/jpeg"
+        case .png: "image/png"
+        case .gif: "image/gif"
+        case .mp4: "video/mp4"
+        case .mov: "video/quicktime"
+        case .mp3: "audio/mpeg"
+        case .wav: "audio/wav"
         }
     }
 }
