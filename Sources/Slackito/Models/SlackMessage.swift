@@ -6,24 +6,29 @@ public struct SlackMessage: BlockConvertible {
     /// Channel id to post to.
     ///
     /// Better to have an id in a `C061Z3P47RB` format to use both post and update methods
-    private let channel: String
+    let channel: String
     /// Thread timestamp to reply to or update
     ///
     /// `ts` is provided in different formats  for both `post` and `update` methods
-    private let ts: String?
+    let ts: String?
     /// Building blocks of a message
     ///
     /// Result builder DSL to make a message
-    private let blocks: [BlockConvertible]
+    let blocks: [BlockConvertible]
+    /// File attachments for the message
+    let attachments: [SlackAttachment]
     
     public var json: String {
+        let blocksJson = blocks.json
+        let attachmentsJson = attachments.isEmpty ? "" : ", \"attachments\": [ \(attachments.map(\.json).joined(separator: ", ")) ]"
+        
         if let ts {
-            """
-            { "channel": "\(channel)", "thread_ts": "\(ts)", "ts": "\(ts)", "blocks": [ \(blocks.json) ] }
+            return """
+            { "channel": "\(channel)", "thread_ts": "\(ts)", "ts": "\(ts)", "blocks": [ \(blocksJson) ]\(attachmentsJson) }
             """
         } else {
-            """
-            { "channel": "\(channel)", "blocks": [ \(blocks.json) ] }
+            return """
+            { "channel": "\(channel)", "blocks": [ \(blocksJson) ]\(attachmentsJson) }
             """
         }
     }
@@ -32,5 +37,13 @@ public struct SlackMessage: BlockConvertible {
         self.channel = channel
         self.ts = ts
         self.blocks = makeBlocks()
+        self.attachments = []
+    }
+    
+    public init(channel: String, ts: String? = nil, attachments: [SlackAttachment] = [], @SlackMessageBuilder _ makeBlocks: () -> [BlockConvertible]) {
+        self.channel = channel
+        self.ts = ts
+        self.blocks = makeBlocks()
+        self.attachments = attachments
     }
 }
