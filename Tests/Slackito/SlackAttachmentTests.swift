@@ -68,6 +68,12 @@ final class SlackAttachmentTests: XCTestCase {
         XCTAssertEqual(FileType.png.mimeType, "image/png")
         XCTAssertEqual(FileType.mp4.mimeType, "video/mp4")
         XCTAssertEqual(FileType.mp3.mimeType, "audio/mpeg")
+        XCTAssertEqual(FileType.txt.mimeType, "text/plain")
+        XCTAssertEqual(FileType.zip.mimeType, "application/zip")
+        XCTAssertEqual(FileType.xml.mimeType, "application/xml")
+        XCTAssertEqual(FileType.json.mimeType, "application/json")
+        XCTAssertEqual(FileType.gif.mimeType, "image/gif")
+        XCTAssertEqual(FileType.mov.mimeType, "video/quicktime")
     }
     
     func test_MessageWithAttachmentsProducesCorrectJson() throws {

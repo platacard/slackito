@@ -91,7 +91,7 @@ public enum FileType: String, CaseIterable, Sendable {
         switch self {
         case .csv: UTType.commaSeparatedText.preferredMIMEType
         case .pdf: UTType.pdf.preferredMIMEType
-        case .txt: UTType.text.preferredMIMEType
+        case .txt: UTType.plainText.preferredMIMEType
         case .json: UTType.json.preferredMIMEType
         case .xml: UTType.xml.preferredMIMEType
         case .zip: UTType.zip.preferredMIMEType
@@ -99,7 +99,7 @@ public enum FileType: String, CaseIterable, Sendable {
         case .png: UTType.png.preferredMIMEType
         case .gif: UTType.gif.preferredMIMEType
         case .mp4: UTType.mpeg4Movie.preferredMIMEType
-        case .mov: UTType.movie.preferredMIMEType
+        case .mov: UTType.quickTimeMovie.preferredMIMEType
         case .mp3: UTType.mp3.preferredMIMEType
         }
     }
