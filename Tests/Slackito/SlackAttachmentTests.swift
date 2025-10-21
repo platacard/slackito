@@ -30,9 +30,10 @@ final class SlackAttachmentTests: XCTestCase {
     }
     
     func test_CsvAttachmentFromUrlProducesCorrectJson() throws {
-        let attachment = SlackAttachment.csv(
+        let attachment = SlackAttachment.file(
             url: "https://example.com/data.csv",
             filename: "report.csv",
+            fileType: .csv,
             title: "Monthly Report",
             fallback: "CSV: Monthly Report"
         )
@@ -84,8 +85,8 @@ final class SlackAttachmentTests: XCTestCase {
     
     func test_MessageWithMultipleAttachmentsProducesCorrectJson() throws {
         let imageAttachment = SlackAttachment.image(url: "https://example.com/image.jpg", title: "Image")
-        let csvAttachment = SlackAttachment.csv(url: "https://example.com/data.csv", filename: "data.csv", title: "Data")
-        
+        let csvAttachment = SlackAttachment.file(url: "https://example.com/data.csv", filename: "data.csv", fileType: .csv, title: "Data")
+
         let message = SlackMessage(channel: "test_channel", attachments: [imageAttachment, csvAttachment]) {
             MarkdownSection("Multiple attachments!")
         }
@@ -110,7 +111,7 @@ final class SlackAttachmentTests: XCTestCase {
     }
     
     func test_MessageWithThreadAndAttachmentsProducesCorrectJson() throws {
-        let attachment = SlackAttachment.csv(url: "https://example.com/data.csv", filename: "data.csv")
+        let attachment = SlackAttachment.file(url: "https://example.com/data.csv", filename: "data.csv", fileType: .csv)
         let message = SlackMessage(channel: "test_channel", ts: "1234567890.123456", attachments: [attachment]) {
             MarkdownSection("Thread reply with attachment")
         }

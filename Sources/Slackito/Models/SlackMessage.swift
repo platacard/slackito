@@ -46,4 +46,11 @@ public struct SlackMessage: BlockConvertible {
         self.blocks = makeBlocks()
         self.attachments = attachments
     }
+
+    public init(channel: String, ts: String? = nil, blocks: [BlockConvertible], attachments: [SlackAttachment] = []) {
+        self.channel = channel
+        self.ts = ts
+        self.blocks = blocks
+        self.attachments = attachments
+    }
 }
