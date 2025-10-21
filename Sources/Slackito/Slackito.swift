@@ -12,8 +12,8 @@ actor Slackito {
     private let maxRetryAttempts: Int
     private var currentRetryAttempt = 0
 
-    private let logger = Cronista.default
-    
+    private let logger = Cronista(module: "Slackito", category: "default")
+
     init(
         appToken: String?,
         session: URLSession = .shared,
@@ -49,7 +49,7 @@ actor Slackito {
         request.httpBody = body.data(using: .utf8)
 
         do {
-            logger.debug("[Slack API] starting the request: \(request.debugDescription)")
+            logger.debug("Starting the request: \(request.debugDescription)")
 
             let (data, response) = try await session.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
@@ -61,19 +61,90 @@ actor Slackito {
 
             return try JSONDecoder().decode(Response.self, from: data)
         } catch {
-            logger.debug("[Slack API] request: \(request.debugDescription) failed with \(error.localizedDescription)")
+            logger.debug("Request: \(request.debugDescription) failed with \(error.localizedDescription)")
 
             if currentRetryAttempt < maxRetryAttempts {
                 currentRetryAttempt += 1
                 let retryBackoff = 5 * (1 + currentRetryAttempt)
-                logger.debug("[Slack API] retrying after \(retryBackoff)s")
+                logger.debug("Retrying after \(retryBackoff)s")
                 try await Task.sleep(for: .seconds(retryBackoff))
                 return try await sendRequest(endpoint: endpoint, queryItems: queryItems, body: body, httpMethod: httpMethod)
             } else {
                 let maxRetryAttempts = maxRetryAttempts
-                logger.error("[Slack API] retry failed \(maxRetryAttempts) times. Failing the request")
+                logger.error("Retry failed \(maxRetryAttempts) times. Failing the request")
                 throw NSError(domain: "SlackAPI retry failed", code: -1)
             }
+        }
+    }
+    
+    /// Upload a file to Slack
+    func uploadFile(
+        data: Data,
+        filename: String,
+        fileType: String,
+        channels: [String] = [],
+        initialComment: String? = nil
+    ) async throws -> FileUploadResponse {
+        guard let baseUrl else { throw ClientError.invalidSlackURL }
+        
+        let url = URL(string: baseUrl.absoluteString + "files.upload")!
+        
+        var request = URLRequest(url: url)
+        request.setValue("Bearer \(appToken)", forHTTPHeaderField: "Authorization")
+        request.httpMethod = "POST"
+        
+        // Create multipart form data
+        let boundary = "Boundary-\(UUID().uuidString)"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        
+        var body = Data()
+        
+        // Add filename
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"filename\"\r\n\r\n".data(using: .utf8)!)
+        body.append("\(filename)\r\n".data(using: .utf8)!)
+        
+        // Add file type
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"filetype\"\r\n\r\n".data(using: .utf8)!)
+        body.append("\(fileType)\r\n".data(using: .utf8)!)
+        
+        // Add channels if provided
+        if !channels.isEmpty {
+            body.append("--\(boundary)\r\n".data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"channels\"\r\n\r\n".data(using: .utf8)!)
+            body.append("\(channels.joined(separator: ","))\r\n".data(using: .utf8)!)
+        }
+        
+        // Add initial comment if provided
+        if let initialComment = initialComment {
+            body.append("--\(boundary)\r\n".data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"initial_comment\"\r\n\r\n".data(using: .utf8)!)
+            body.append("\(initialComment)\r\n".data(using: .utf8)!)
+        }
+        
+        // Add file data
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: application/octet-stream\r\n\r\n".data(using: .utf8)!)
+        body.append(data)
+        body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+        
+        request.httpBody = body
+        
+        do {
+            logger.debug("[Slack API] uploading file: \(filename)")
+            
+            let (data, response) = try await session.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+                logger.error("[Slack API] file upload failed. Response: \(response)")
+                throw URLError(.badServerResponse)
+            }
+            
+            return try JSONDecoder().decode(FileUploadResponse.self, from: data)
+        } catch {
+            logger.error("[Slack API] file upload failed: \(error.localizedDescription)")
+            throw error
         }
     }
 }
@@ -81,6 +152,7 @@ actor Slackito {
 // MARK: - Extensions
 
 extension Slackito {
+
     struct Response: Decodable {
         /// Response status
         let ok: Bool
@@ -88,6 +160,30 @@ extension Slackito {
         let ts: String?
         /// Optional error if `ok == false`
         let error: String?
+    }
+    
+    struct FileUploadResponse: Decodable {
+        /// Response status
+        let ok: Bool
+        /// File information
+        let file: FileInfo?
+        /// Optional error if `ok == false`
+        let error: String?
+    }
+    
+    struct FileInfo: Decodable {
+        /// File ID
+        let id: String
+        /// File name
+        let name: String
+        /// File URL
+        let urlPrivate: String
+        /// Public URL (if available)
+        let urlPrivateDownload: String?
+        /// File type
+        let filetype: String?
+        /// File size
+        let size: Int?
     }
     
     enum ClientError: Swift.Error {
