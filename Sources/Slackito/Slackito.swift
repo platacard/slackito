@@ -12,8 +12,8 @@ actor Slackito {
     private let maxRetryAttempts: Int
     private var currentRetryAttempt = 0
 
-    private let logger = Cronista.default
-    
+    private let logger = Cronista(module: "Slackito", category: "default")
+
     init(
         appToken: String?,
         session: URLSession = .shared,
@@ -49,7 +49,7 @@ actor Slackito {
         request.httpBody = body.data(using: .utf8)
 
         do {
-            logger.debug("[Slack API] starting the request: \(request.debugDescription)")
+            logger.debug("Starting the request: \(request.debugDescription)")
 
             let (data, response) = try await session.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
@@ -61,17 +61,17 @@ actor Slackito {
 
             return try JSONDecoder().decode(Response.self, from: data)
         } catch {
-            logger.debug("[Slack API] request: \(request.debugDescription) failed with \(error.localizedDescription)")
+            logger.debug("Request: \(request.debugDescription) failed with \(error.localizedDescription)")
 
             if currentRetryAttempt < maxRetryAttempts {
                 currentRetryAttempt += 1
                 let retryBackoff = 5 * (1 + currentRetryAttempt)
-                logger.debug("[Slack API] retrying after \(retryBackoff)s")
+                logger.debug("Retrying after \(retryBackoff)s")
                 try await Task.sleep(for: .seconds(retryBackoff))
                 return try await sendRequest(endpoint: endpoint, queryItems: queryItems, body: body, httpMethod: httpMethod)
             } else {
                 let maxRetryAttempts = maxRetryAttempts
-                logger.error("[Slack API] retry failed \(maxRetryAttempts) times. Failing the request")
+                logger.error("Retry failed \(maxRetryAttempts) times. Failing the request")
                 throw NSError(domain: "SlackAPI retry failed", code: -1)
             }
         }
@@ -152,6 +152,7 @@ actor Slackito {
 // MARK: - Extensions
 
 extension Slackito {
+
     struct Response: Decodable {
         /// Response status
         let ok: Bool
