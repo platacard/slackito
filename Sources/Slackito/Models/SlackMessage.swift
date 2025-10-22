@@ -1,4 +1,5 @@
 import Foundation
+import Cronista
 
 /// Root slack message entity holding a nested structure of DSL blocks
 @MainActor
@@ -17,18 +18,17 @@ public struct SlackMessage: BlockConvertible {
     let blocks: [BlockConvertible]
     /// File attachments for the message
     let attachments: [SlackAttachment]
-    
+
+    let logger = Cronista(module: "Slackito", category: "SlackMessage")
+
     public var json: String {
-        let blocksJson = blocks.json
-        let attachmentsJson = attachments.isEmpty ? "" : ", \"attachments\": [ \(attachments.map(\.json).joined(separator: ", ")) ]"
-        
         if let ts {
-            return """
-            { "channel": "\(channel)", "thread_ts": "\(ts)", "ts": "\(ts)", "blocks": [ \(blocksJson) ]\(attachmentsJson) }
+            """
+            { "channel": "\(channel)", "thread_ts": "\(ts)", "ts": "\(ts)", "blocks": [ \(blocks.json) ] }
             """
         } else {
-            return """
-            { "channel": "\(channel)", "blocks": [ \(blocksJson) ]\(attachmentsJson) }
+            """
+            { "channel": "\(channel)", "blocks": [ \(blocks.json) ] }
             """
         }
     }

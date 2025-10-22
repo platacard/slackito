@@ -10,6 +10,10 @@ let package = Package(
             name: "Slackito",
             targets: ["Slackito"]
         ),
+        .executable(
+            name: "slack-cli",
+            targets: ["CLI"]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/platacard/cronista.git", from: "1.0.3"),
@@ -25,6 +29,11 @@ let package = Package(
             name: "SlackitoTests",
             dependencies: ["Slackito"],
             path: "Tests/Slackito"
+        ),
+        .executableTarget(
+            name: "CLI",
+            dependencies: ["Slackito"],
+            path: "Sources/CLI"
         ),
     ]
 )

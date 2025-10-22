@@ -5,51 +5,45 @@ extension SlackMessage {
     @discardableResult
     public func send(as appToken: String?) async throws -> MessageMeta {
         let api = try Slackito(appToken: appToken)
-        let processedAttachments = try await processAttachments(appToken: appToken, api: api)
+        
+        if attachments.isEmpty {
+            let response: Slackito.ChatResponse = try await api.sendRequest(
+                endpoint: "chat.postMessage",
+                body: json.data(using: .utf8),
+                httpMethod: "POST"
+            )
 
-        let rebuiltMessage = SlackMessage(
-            channel: channel,
-            ts: ts,
-            blocks: blocks,
-            attachments: processedAttachments
-        )
-        
-        let response = try await api.sendRequest(
-            endpoint: "chat.postMessage",
-            body: rebuiltMessage.json,
-            httpMethod: "POST"
-        )
-        
-        guard response.ok else {
-            throw NSError(domain: "Request failed with \(response)", code: 1)
+            guard response.ok else {
+                throw NSError(domain: "Request failed with \(response)", code: 1)
+            }
+
+            return MessageMeta(timestamp: response.ts)
+        } else {
+            let response = try await sendWithAttachments(appToken: appToken, api: api)
+            return MessageMeta(timestamp: response.timestamp)
         }
-        
-        return MessageMeta(timestamp: response.ts)
     }
     
     @discardableResult
     public func update(as appToken: String?) async throws -> MessageMeta {
         let api = try Slackito(appToken: appToken)
-        let processedAttachments = try await processAttachments(appToken: appToken, api: api)
 
-        let rebuiltMessage = SlackMessage(
-            channel: channel,
-            ts: ts,
-            blocks: blocks,
-            attachments: processedAttachments
-        )
+        if attachments.isEmpty {
+            let response: Slackito.ChatResponse = try await api.sendRequest(
+                endpoint: "chat.update",
+                body: json.data(using: .utf8),
+                httpMethod: "POST"
+            )
 
-        let response = try await api.sendRequest(
-            endpoint: "chat.update",
-            body: rebuiltMessage.json,
-            httpMethod: "POST"
-        )
-        
-        guard response.ok else {
-            throw NSError(domain: "Request failed with \(response)", code: 1)
+            guard response.ok else {
+                throw NSError(domain: "Request failed with \(response)", code: 1)
+            }
+
+            return MessageMeta(timestamp: response.ts)
+        } else {
+            let response = try await sendWithAttachments(appToken: appToken, api: api)
+            return MessageMeta(timestamp: response.timestamp)
         }
-        
-        return MessageMeta(timestamp: response.ts)
     }
 }
 
@@ -64,39 +58,59 @@ public extension SlackMessage {
 
 private extension SlackMessage {
 
-    func processAttachments(appToken: String?, api: Slackito) async throws -> [SlackAttachment] {
-        let api = try Slackito(appToken: appToken)
-        var processedAttachments = attachments
-        
-        for (index, attachment) in attachments.enumerated() {
+    // https://docs.slack.dev/messaging/working-with-files/#uploading_files
+    func sendWithAttachments(appToken: String?, api: Slackito) async throws -> MessageMeta {
+        var files: [Slackito.FileUploadStartResponse] = []
+
+        for attachment in attachments {
             switch attachment.type {
-            case .fileData(let data, let filename, let fileType):
-                let uploadResponse = try await api.uploadFile(
-                    data: data,
-                    filename: filename,
-                    fileType: fileType.rawValue,
-                    channels: [channel]
+            case .fileData(let data, let filename):
+                let file: Slackito.FileUploadStartResponse = try await api.sendRequest(
+                    endpoint: "files.getUploadURLExternal",
+                    queryItems: ["filename": "\(filename)", "length": "\(data.count)"],
+                    httpMethod: "POST"
                 )
 
-                guard uploadResponse.ok, let fileInfo = uploadResponse.file else {
-                    throw NSError(domain: "File upload failed: \(uploadResponse.error ?? "Unknown error")", code: 2)
+                guard file.ok else {
+                    throw NSError(domain: "File upload failed: \(file.error ?? "Unknown error")", code: -1)
                 }
 
-                // Replace the fileData attachment with a file URL attachment
-                let newAttachment = SlackAttachment(
-                    type: .file(url: fileInfo.urlPrivate, filename: fileInfo.name, fileType: fileType),
-                    title: attachment.title,
-                    fallback: attachment.fallback,
-                    color: attachment.color,
-                    text: attachment.text
-                )
-                processedAttachments[index] = newAttachment
+                files.append(file)
+
+                var uploadRequest = URLRequest(url: file.uploadUrl)
+                uploadRequest.httpMethod = "POST"
+                uploadRequest.httpBody = data
+                uploadRequest.addValue(filename, forHTTPHeaderField: "filename")
+
+                let (_, uploadResponse) = try await URLSession.shared.data(for: uploadRequest)
+                guard let httpResponse = uploadResponse as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+                    throw NSError(domain: "CSV data upload failed", code: 5)
+                }
             default:
-                // No processing needed for URL-based attachments
                 break
             }
         }
 
-        return processedAttachments
+        let requestJson = Slackito.FileUploadFinishedRequest(
+            files: files.map { Slackito.File(id: $0.fileId, timestamp: nil) },
+            channelId: channel,
+            threadTs: ts,
+            blocks: "[ \(blocks.json) ]"
+        )
+        let encoder = JSONEncoder()
+        encoder.keyEncodingStrategy = .convertToSnakeCase
+
+        let data = try encoder.encode(requestJson)
+
+        let completeResponse: Slackito.FileUploadFinishedResponse = try await api.sendRequest(
+            endpoint: "files.completeUploadExternal",
+            body: data,
+            httpMethod: "POST"
+        )
+
+        let ts = String(completeResponse.files.first?.timestamp ?? 0)
+        logger.info("First file timestamp: \(ts)")
+
+        return MessageMeta(timestamp: ts)
     }
 }
