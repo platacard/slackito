@@ -53,7 +53,7 @@ actor Slackito {
 
             let (data, response) = try await session.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-                logger.error("[Slack API] request \(request) failed. Response: \(response)")
+                logger.error("request \(request) failed. Response: \(response)")
                 throw URLError(.badServerResponse)
             }
 
@@ -133,17 +133,20 @@ actor Slackito {
         request.httpBody = body
         
         do {
-            logger.debug("[Slack API] uploading file: \(filename)")
-            
+            logger.debug("Uploading file: \(filename)")
+
             let (data, response) = try await session.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-                logger.error("[Slack API] file upload failed. Response: \(response)")
+                logger.error("File upload failed. Response: \(response)")
                 throw URLError(.badServerResponse)
             }
-            
-            return try JSONDecoder().decode(FileUploadResponse.self, from: data)
+
+            let decoder = JSONDecoder()
+            decoder.keyDecodingStrategy = .convertFromSnakeCase
+
+            return try decoder.decode(FileUploadResponse.self, from: data)
         } catch {
-            logger.error("[Slack API] file upload failed: \(error.localizedDescription)")
+            logger.error("File upload failed: \(error.localizedDescription)")
             throw error
         }
     }
@@ -172,17 +175,13 @@ extension Slackito {
     }
     
     struct FileInfo: Decodable {
-        /// File ID
         let id: String
-        /// File name
         let name: String
-        /// File URL
         let urlPrivate: String
-        /// Public URL (if available)
         let urlPrivateDownload: String?
-        /// File type
+        let permalink: String
+        let permalinkPublic: String?
         let filetype: String?
-        /// File size
         let size: Int?
     }
     
