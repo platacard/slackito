@@ -53,7 +53,7 @@ actor Slackito {
 
             let (data, response) = try await session.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-                logger.error("[Slack API] request \(request) failed. Response: \(response)")
+                logger.error("request \(request) failed. Response: \(response)")
                 throw URLError(.badServerResponse)
             }
 
@@ -82,8 +82,7 @@ actor Slackito {
         data: Data,
         filename: String,
         fileType: String,
-        channels: [String] = [],
-        initialComment: String? = nil
+        channels: [String] = []
     ) async throws -> FileUploadResponse {
         guard let baseUrl else { throw ClientError.invalidSlackURL }
         
@@ -92,38 +91,26 @@ actor Slackito {
         var request = URLRequest(url: url)
         request.setValue("Bearer \(appToken)", forHTTPHeaderField: "Authorization")
         request.httpMethod = "POST"
-        
-        // Create multipart form data
+
         let boundary = "Boundary-\(UUID().uuidString)"
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
         
         var body = Data()
-        
-        // Add filename
+
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
         body.append("Content-Disposition: form-data; name=\"filename\"\r\n\r\n".data(using: .utf8)!)
         body.append("\(filename)\r\n".data(using: .utf8)!)
-        
-        // Add file type
+
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
         body.append("Content-Disposition: form-data; name=\"filetype\"\r\n\r\n".data(using: .utf8)!)
         body.append("\(fileType)\r\n".data(using: .utf8)!)
-        
-        // Add channels if provided
+
         if !channels.isEmpty {
             body.append("--\(boundary)\r\n".data(using: .utf8)!)
             body.append("Content-Disposition: form-data; name=\"channels\"\r\n\r\n".data(using: .utf8)!)
             body.append("\(channels.joined(separator: ","))\r\n".data(using: .utf8)!)
         }
-        
-        // Add initial comment if provided
-        if let initialComment = initialComment {
-            body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"initial_comment\"\r\n\r\n".data(using: .utf8)!)
-            body.append("\(initialComment)\r\n".data(using: .utf8)!)
-        }
-        
-        // Add file data
+
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
         body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
         body.append("Content-Type: application/octet-stream\r\n\r\n".data(using: .utf8)!)
@@ -133,17 +120,20 @@ actor Slackito {
         request.httpBody = body
         
         do {
-            logger.debug("[Slack API] uploading file: \(filename)")
-            
+            logger.debug("Uploading file: \(filename)")
+
             let (data, response) = try await session.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-                logger.error("[Slack API] file upload failed. Response: \(response)")
+                logger.error("File upload failed. Response: \(response)")
                 throw URLError(.badServerResponse)
             }
-            
-            return try JSONDecoder().decode(FileUploadResponse.self, from: data)
+
+            let decoder = JSONDecoder()
+            decoder.keyDecodingStrategy = .convertFromSnakeCase
+
+            return try decoder.decode(FileUploadResponse.self, from: data)
         } catch {
-            logger.error("[Slack API] file upload failed: \(error.localizedDescription)")
+            logger.error("File upload failed: \(error.localizedDescription)")
             throw error
         }
     }
@@ -172,17 +162,13 @@ extension Slackito {
     }
     
     struct FileInfo: Decodable {
-        /// File ID
         let id: String
-        /// File name
         let name: String
-        /// File URL
         let urlPrivate: String
-        /// Public URL (if available)
         let urlPrivateDownload: String?
-        /// File type
+        let permalink: String
+        let permalinkPublic: String?
         let filetype: String?
-        /// File size
         let size: Int?
     }
     
