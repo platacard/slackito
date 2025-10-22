@@ -27,12 +27,12 @@ actor Slackito {
     }
     
     
-    func sendRequest(
+    func sendRequest<R: Response>(
         endpoint: String,
         queryItems: [String: String] = [:],
-        body: String = "",
+        body: Data? = nil,
         httpMethod: String?
-    ) async throws -> Response {
+    ) async throws -> R {
         guard
             let baseUrl,
             let url = URL(string: baseUrl.absoluteString + endpoint)?.appending(
@@ -44,9 +44,12 @@ actor Slackito {
         
         var request = URLRequest(url: url)
         request.setValue("Bearer \(appToken)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "content-type")
         request.httpMethod = httpMethod
-        request.httpBody = body.data(using: .utf8)
+
+        if let body {
+            request.httpBody = body
+        }
 
         do {
             logger.debug("Starting the request: \(request.debugDescription)")
@@ -57,9 +60,13 @@ actor Slackito {
                 throw URLError(.badServerResponse)
             }
 
+            let decoder = JSONDecoder()
+            decoder.keyDecodingStrategy = .convertFromSnakeCase
+            let result =  try decoder.decode(R.self, from: data)
+            
             currentRetryAttempt = 0
 
-            return try JSONDecoder().decode(Response.self, from: data)
+            return result
         } catch {
             logger.debug("Request: \(request.debugDescription) failed with \(error.localizedDescription)")
 
@@ -76,105 +83,52 @@ actor Slackito {
             }
         }
     }
-    
-    /// Upload a file to Slack
-    func uploadFile(
-        data: Data,
-        filename: String,
-        fileType: String,
-        channels: [String] = []
-    ) async throws -> FileUploadResponse {
-        guard let baseUrl else { throw ClientError.invalidSlackURL }
-        
-        let url = URL(string: baseUrl.absoluteString + "files.upload")!
-        
-        var request = URLRequest(url: url)
-        request.setValue("Bearer \(appToken)", forHTTPHeaderField: "Authorization")
-        request.httpMethod = "POST"
-
-        let boundary = "Boundary-\(UUID().uuidString)"
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-        
-        var body = Data()
-
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"filename\"\r\n\r\n".data(using: .utf8)!)
-        body.append("\(filename)\r\n".data(using: .utf8)!)
-
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"filetype\"\r\n\r\n".data(using: .utf8)!)
-        body.append("\(fileType)\r\n".data(using: .utf8)!)
-
-        if !channels.isEmpty {
-            body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"channels\"\r\n\r\n".data(using: .utf8)!)
-            body.append("\(channels.joined(separator: ","))\r\n".data(using: .utf8)!)
-        }
-
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
-        body.append("Content-Type: application/octet-stream\r\n\r\n".data(using: .utf8)!)
-        body.append(data)
-        body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
-        
-        request.httpBody = body
-        
-        do {
-            logger.debug("Uploading file: \(filename)")
-
-            let (data, response) = try await session.data(for: request)
-            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-                logger.error("File upload failed. Response: \(response)")
-                throw URLError(.badServerResponse)
-            }
-
-            let decoder = JSONDecoder()
-            decoder.keyDecodingStrategy = .convertFromSnakeCase
-
-            return try decoder.decode(FileUploadResponse.self, from: data)
-        } catch {
-            logger.error("File upload failed: \(error.localizedDescription)")
-            throw error
-        }
-    }
 }
 
 // MARK: - Extensions
 
 extension Slackito {
 
-    struct Response: Decodable {
+    protocol Response: Decodable {
         /// Response status
+        var ok: Bool { get }
+        /// Optional error if `ok == false`
+        var error: String? { get }
+    }
+
+    struct ChatResponse: Response {
         let ok: Bool
-        /// Message timestamp to reply to a thread in a different message
+        let error: String?
         let ts: String?
-        /// Optional error if `ok == false`
-        let error: String?
     }
-    
-    struct FileUploadResponse: Decodable {
-        /// Response status
+
+    struct FileUploadStartResponse: Response {
         let ok: Bool
-        /// File information
-        let file: FileInfo?
-        /// Optional error if `ok == false`
         let error: String?
+        let uploadUrl: URL
+        let fileId: String
     }
-    
-    struct FileInfo: Decodable {
+    struct File: Codable {
         let id: String
-        let name: String
-        let urlPrivate: String
-        let urlPrivateDownload: String?
-        let permalink: String
-        let permalinkPublic: String?
-        let filetype: String?
-        let size: Int?
+        let timestamp: Int?
     }
-    
+
+    struct FileUploadFinishedRequest: Encodable {
+        let files: [File]
+        let channelId: String
+        let threadTs: String?
+        let blocks: String
+    }
+
+    struct FileUploadFinishedResponse: Response {
+        let ok: Bool
+        let error: String?
+        let ts: String?
+        let files: [File]
+    }
+
     enum ClientError: Swift.Error {
         case slackTokenRequired
         case invalidSlackURL
     }
 }
-

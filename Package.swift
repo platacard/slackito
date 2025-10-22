@@ -9,7 +9,7 @@ let package = Package(
         .library(
             name: "Slackito",
             targets: ["Slackito"]
-        ),
+        )
     ],
     dependencies: [
         .package(url: "https://github.com/platacard/cronista.git", from: "1.0.3"),
@@ -25,6 +25,6 @@ let package = Package(
             name: "SlackitoTests",
             dependencies: ["Slackito"],
             path: "Tests/Slackito"
-        ),
+        )
     ]
 )

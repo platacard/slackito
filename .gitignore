@@ -7,3 +7,6 @@ DerivedData/
 .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 .netrc
 .idea
+.swiftpm/xcode/xcshareddata/xcschemes/Slackito-Package.xcscheme
+.swiftpm/xcode/xcshareddata/xcschemes/Slackito.xcscheme
+.swiftpm/xcode/xcshareddata/xcschemes/slack-cli.xcscheme
