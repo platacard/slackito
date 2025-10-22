@@ -138,7 +138,7 @@ public struct ImageAccessory {
         , "accessory": {
             "type": "image",
             "image_url": "\(url)",
-            "alt_text": \(text)
+            "alt_text": "\(text)"
         }
         """
     }
