@@ -5,7 +5,7 @@ extension SlackMessage {
     @discardableResult
     public func send(as appToken: String?) async throws -> MessageMeta {
         let api = try Slackito(appToken: appToken)
-        
+
         if attachments.isEmpty {
             let response: Slackito.ChatResponse = try await api.sendRequest(
                 endpoint: "chat.postMessage",
@@ -65,6 +65,7 @@ private extension SlackMessage {
         for attachment in attachments {
             switch attachment.type {
             case .fileData(let data, let filename):
+                // 1. Get the URL to upload to
                 let file: Slackito.FileUploadStartResponse = try await api.sendRequest(
                     endpoint: "files.getUploadURLExternal",
                     queryItems: ["filename": "\(filename)", "length": "\(data.count)"],
@@ -77,6 +78,7 @@ private extension SlackMessage {
 
                 files.append(file)
 
+                // 2. Upload raw bytes
                 var uploadRequest = URLRequest(url: file.uploadUrl)
                 uploadRequest.httpMethod = "POST"
                 uploadRequest.httpBody = data
@@ -91,6 +93,7 @@ private extension SlackMessage {
             }
         }
 
+        // 3. Finish the upload
         let requestJson = Slackito.FileUploadFinishedRequest(
             files: files.map { Slackito.File(id: $0.fileId, timestamp: nil) },
             channelId: channel,
