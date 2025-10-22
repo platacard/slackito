@@ -86,10 +86,8 @@ private extension SlackMessage {
 
                 let (_, uploadResponse) = try await URLSession.shared.data(for: uploadRequest)
                 guard let httpResponse = uploadResponse as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-                    throw NSError(domain: "CSV data upload failed", code: 5)
+                    throw NSError(domain: "File upload failed", code: -1)
                 }
-            default:
-                break
             }
         }
 

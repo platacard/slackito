@@ -118,7 +118,7 @@ public struct Image: BlockConvertible {
                 "emoji": true
             },
             "image_url": "\(url)",
-            "alt_text": "delicious tacos"
+            "alt_text": "\(text)"
             }
         """
     }
@@ -138,7 +138,7 @@ public struct ImageAccessory {
         , "accessory": {
             "type": "image",
             "image_url": "\(url)",
-            "alt_text": "text"
+            "alt_text": \(text)
         }
         """
     }
