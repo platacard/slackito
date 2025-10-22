@@ -18,10 +18,6 @@ public struct SlackAttachment: Sendable {
 
 /// Types of attachments supported
 public enum AttachmentType: Sendable {
-    /// Image attachment from URL
-    case image(url: String, altText: String? = nil)
-    /// File attachment from URL
-    case file(url: String, filename: String)
     /// File attachment from local data
     case fileData(data: Data, filename: String)
 }

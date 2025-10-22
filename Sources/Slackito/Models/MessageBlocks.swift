@@ -42,30 +42,46 @@ public struct Header: BlockConvertible {
 /// Markdown text section. Used both inside `FieldsSection` and without it
 public struct MarkdownSection: MarkdownSectionConvertible, BlockConvertible {
     public var json: String {
-        """
-        { "type": "section", "text": { "type": "mrkdwn", "text": "\(markdown)" } }
-        """
+        if let accessory {
+            """
+            { "type": "section", "text": { "type": "mrkdwn", "text": "\(markdown)" } \(accessory.json) }
+            """
+        } else {
+            """
+            { "type": "section", "text": { "type": "mrkdwn", "text": "\(markdown)" } }
+            """
+        }
     }
     
     public let markdown: String
-    
-    public init(_ markdown: String) {
+    public let accessory: ImageAccessory?
+
+    public init(_ markdown: String, accessory: ImageAccessory? = nil) {
         self.markdown = markdown
+        self.accessory = accessory
     }
 }
 
 /// Plain text section, used in the message body to send a simple text
 public struct PlainSection: PlainSectionConvertible & BlockConvertible {
     public var json: String {
-        """
-        { "type": "section", "text": { "type": "plain_text", "text": "\(plainText)" } }
-        """
+        if let accessory {
+            """
+            { "type": "section", "text": { "type": "plain_text", "text": "\(plainText)" } \(accessory.json) }
+            """
+        } else {
+            """
+            { "type": "section", "text": { "type": "plain_text", "text": "\(plainText)" } }
+            """
+        }
     }
     
     public let plainText: String
-    
-    public init(_ plainText: String) {
+    public let accessory: ImageAccessory?
+
+    public init(_ plainText: String, accessory: ImageAccessory? = nil) {
         self.plainText = plainText
+        self.accessory = accessory
     }
 }
 
@@ -88,6 +104,51 @@ public struct FieldsSection: BlockConvertible {
     
     public init(@SlackMessageMarkdownSectionBuilder _ sections: () -> [MarkdownSectionConvertible]) {
         self.sections = sections()
+    }
+}
+
+public struct Image: BlockConvertible {
+    public var json: String {
+        """
+            {
+            "type": "image",
+            "title": {
+                "type": "plain_text",
+                "text": "\(text)",
+                "emoji": true
+            },
+            "image_url": "\(url)",
+            "alt_text": "delicious tacos"
+            }
+        """
+    }
+
+    public let url: String
+    public let text: String
+
+    public init(url: String, text: String) {
+        self.url = url
+        self.text = text
+    }
+}
+
+public struct ImageAccessory {
+    public var json: String {
+        """
+        , "accessory": {
+            "type": "image",
+            "image_url": "\(url)",
+            "alt_text": "text"
+        }
+        """
+    }
+
+    public let url: String
+    public let text: String
+
+    public init(url: String, text: String) {
+        self.url = url
+        self.text = text
     }
 }
 

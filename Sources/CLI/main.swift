@@ -53,13 +53,31 @@ print("Message JSON:")
 print(message.json)
 print()
 
+let imageURL = "https://s3-media2.fl.yelpcdn.com/bphoto/DawwNigKJ2ckPeDeDM7jAg/o.jpg"
+
+let imageMessage = SlackMessage(channel: channel, ts: result.timestamp) {
+    MarkdownSection(
+        "Wow, an accessory image like avatars",
+        accessory: ImageAccessory(
+            url: imageURL,
+            text: "some text"
+        )
+    )
+
+    MarkdownSection("Wow there's an image even bigger")
+
+    Image(url: imageURL, text: "Wow ima image")
+}
+
 print("🚀 Testing Upload:")
 print("========================")
 
 do {
     print("Uploading CSV file...")
     let result = try await message.send(as: token)
+    let result2 = try await imageMessage.send(as: token)
     print("✅ Upload successful! Message timestamp: \(result.timestamp ?? "N/A")")
+    print(result2)
 } catch {
     print("❌ Upload failed: \(error.localizedDescription)")
 }
