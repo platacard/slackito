@@ -3,8 +3,8 @@ import Foundation
 extension SlackMessage {
 
     @discardableResult
-    public func send(as appToken: String?) async throws -> MessageMeta {
-        let api = try Slackito(appToken: appToken)
+    public func send(as appToken: String?, verbose: Bool = false) async throws -> MessageMeta {
+        let api = try Slackito(appToken: appToken, verbose: verbose)
 
         if attachments.isEmpty {
             let response: Slackito.ChatResponse = try await api.sendRequest(
@@ -25,8 +25,8 @@ extension SlackMessage {
     }
     
     @discardableResult
-    public func update(as appToken: String?) async throws -> MessageMeta {
-        let api = try Slackito(appToken: appToken)
+    public func update(as appToken: String?, verbose: Bool = false) async throws -> MessageMeta {
+        let api = try Slackito(appToken: appToken, verbose: verbose)
 
         if attachments.isEmpty {
             let response: Slackito.ChatResponse = try await api.sendRequest(
