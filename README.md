@@ -54,20 +54,23 @@ try await message.send(as: "slack_token")
 Slackito also supports sending attachments including images, CSV files, and other file types. Use raw data to attach files to a message. For images use `ImageAccessory` in MarkdownSection/PlainSection or `Image` block for full-sized images.
 
 ```swift
+let csv: String = "Key, Name, Date\n..."
+let csvAttachment = SlackAttachment(type: .fileData(csv.data(encoding: .utf8), filename: report.csv))
+
 let message = SlackMessage(
     channel: "reports",
     attachments: [csvAttachment]
 ) {
-    MarkdownSection("📊 Here's the monthly report with data!")
-
-    Image(url: "https://example.com/image.jpg", text: "Jack's avatar")
-        MarkdownSection(
-            "Author's avatar",
-            accessory: ImageAccessory(
-                url: "https://example.com/image.jpg",
-                text: "Avatar image"
-            )
+    MarkdownSection(
+        "📊 Here's the monthly report with data!",
+        accessory: ImageAccessory(
+            url: "https://example.com/image.jpg",
+            text: "Report thumbnail"
         )
+    )
+
+    Image(url: "https://example.com/image.jpg", text: "report_jpg")
+    
     Context {
         "*Generated on*: \(Date())"
         "*Data source*: Internal systems"
