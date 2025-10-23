@@ -13,17 +13,20 @@ actor Slackito {
     private var currentRetryAttempt = 0
 
     private let logger = Cronista(module: "Slackito", category: "default")
+    private let verbose: Bool
 
     init(
         appToken: String?,
         session: URLSession = .shared,
-        maxRetryAttempts: Int = 3
+        maxRetryAttempts: Int = 3,
+        verbose: Bool = false
     ) throws {
         guard let appToken else { throw ClientError.slackTokenRequired }
         
         self.appToken = appToken
         self.session = session
         self.maxRetryAttempts = maxRetryAttempts
+        self.verbose = verbose
     }
     
     
@@ -60,6 +63,11 @@ actor Slackito {
                 throw URLError(.badServerResponse)
             }
 
+            if verbose {
+                logger.debug("Response: \(response)")
+                logger.debug("Response data: \(String(data: data, encoding: .utf8) ?? "")")
+            }
+
             let decoder = JSONDecoder()
             decoder.keyDecodingStrategy = .convertFromSnakeCase
             let result =  try decoder.decode(R.self, from: data)
@@ -67,14 +75,19 @@ actor Slackito {
             currentRetryAttempt = 0
 
             return result
+        } catch let DecodingError.typeMismatch(type, context) {
+            logger.error("Type '\(type)' mismatch:, \(context.debugDescription)")
+            logger.error("codingPath: \(context.codingPath)")
+            throw NSError(domain: "SlackAPI decoding failed", code: -1)
         } catch {
-            logger.debug("Request: \(request.debugDescription) failed with \(error.localizedDescription)")
+            logger.error("Request: \(request.description) failed with \(error)")
 
             if currentRetryAttempt < maxRetryAttempts {
                 currentRetryAttempt += 1
                 let retryBackoff = 5 * (1 + currentRetryAttempt)
-                logger.debug("Retrying after \(retryBackoff)s")
+                logger.warning("Retrying after \(retryBackoff)s")
                 try await Task.sleep(for: .seconds(retryBackoff))
+
                 return try await sendRequest(endpoint: endpoint, queryItems: queryItems, body: body, httpMethod: httpMethod)
             } else {
                 let maxRetryAttempts = maxRetryAttempts
