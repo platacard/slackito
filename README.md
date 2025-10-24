@@ -1,4 +1,7 @@
-# Slackito
+# <img width=30 style="float:left; margin-bottom:20px" alt="slackito_2" src="https://github.com/user-attachments/assets/f59d9796-f827-4bd8-bffd-84ab598d0373" /> Slackito
+
+
+
 
 A client written with result builders to work with Slack Web API. A small part of the larger iOS deploy infrastructure at Plata.
 
