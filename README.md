@@ -1,4 +1,7 @@
 # <img width=30 style="float:left; margin-bottom:20px" alt="slackito_2" src="https://github.com/user-attachments/assets/f59d9796-f827-4bd8-bffd-84ab598d0373" /> Slackito
+<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+[![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg?style=flat-square)](#contributors-)
+<!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 
 
@@ -87,6 +90,20 @@ try await message.send(as: "slack_token")
 ## Contributors
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Egor-Danilov"><img src="https://avatars.githubusercontent.com/u/37295385?v=4?s=100" width="100px;" alt="decoder"/><br /><sub><b>decoder</b></sub></a><br /><a href="https://github.com/platacard/slackito/commits?author=Egor-Danilov" title="Code">💻</a></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
 <!-- prettier-ignore-start -->
 <!-- markdownlint-disable -->
 
