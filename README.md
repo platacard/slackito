@@ -1,6 +1,6 @@
 # <img width=30 style="float:left; margin-bottom:20px" alt="slackito_2" src="https://github.com/user-attachments/assets/f59d9796-f827-4bd8-bffd-84ab598d0373" /> Slackito
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 
@@ -117,6 +117,7 @@ try await message.send(as: "slack_token")
   <tbody>
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Egor-Danilov"><img src="https://avatars.githubusercontent.com/u/37295385?v=4?s=100" width="100px;" alt="decoder"/><br /><sub><b>decoder</b></sub></a><br /><a href="https://github.com/platacard/slackito/commits?author=Egor-Danilov" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/memoto"><img src="https://avatars.githubusercontent.com/u/16154570?v=4?s=100" width="100px;" alt="Konstantin Iurichev"/><br /><sub><b>Konstantin Iurichev</b></sub></a><br /><a href="https://github.com/platacard/slackito/commits?author=memoto" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
