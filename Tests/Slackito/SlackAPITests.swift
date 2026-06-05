@@ -239,4 +239,44 @@ final class SlackitoTests: XCTestCase {
         let actual = try message.json.prettify()
         XCTAssertEqual(expected, actual)
     }
+
+    func test_ActionsBuilderProducesCorrectRawJson() throws {
+        let message = SlackMessage(channel: "test_channel") {
+            Actions {
+                Button("Gitlab job", url: "https://gitlab.example/job/1")
+                Button("Allure launch", url: "https://allure.example/launch/1")
+            }
+        }
+
+        let expected = """
+        { "channel": "test_channel", "blocks": [ { "type": "actions", "elements": [ { "type": "button", "text": { "type": "plain_text", "text": "Gitlab job", "emoji": true }, "url": "https://gitlab.example/job/1" }, { "type": "button", "text": { "type": "plain_text", "text": "Allure launch", "emoji": true }, "url": "https://allure.example/launch/1" } ] } ] }
+        """
+
+        let actual = message.json
+        XCTAssertEqual(expected, actual)
+    }
+
+    func test_ActionsArrayInitProducesCorrectRawJson() throws {
+        let message = SlackMessage(channel: "test_channel") {
+            Actions([Button("Open", url: "https://example.com")])
+        }
+
+        let expected = """
+        { "channel": "test_channel", "blocks": [ { "type": "actions", "elements": [ { "type": "button", "text": { "type": "plain_text", "text": "Open", "emoji": true }, "url": "https://example.com" } ] } ] }
+        """
+
+        let actual = message.json
+        XCTAssertEqual(expected, actual)
+    }
+
+    func test_ActionsBuilderProducesValidJson() throws {
+        let message = SlackMessage(channel: "test_channel") {
+            Actions {
+                Button("Gitlab job", url: "https://gitlab.example/job/1")
+            }
+        }
+
+        // prettify round-trips through JSONSerialization, so it throws on invalid JSON.
+        XCTAssertNoThrow(try message.json.prettify())
+    }
 }

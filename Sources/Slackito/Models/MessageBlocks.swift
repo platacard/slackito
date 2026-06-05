@@ -172,3 +172,49 @@ public struct Context: BlockConvertible {
         self.markdownElements = markdownElements()
     }
 }
+
+/// Interactive button element used inside an `Actions` block.
+///
+/// When a `url` is provided, the button opens it in the browser on click.
+public struct Button: Sendable {
+    public var json: String {
+        if let url {
+            """
+            { "type": "button", "text": { "type": "plain_text", "text": "\(text)", "emoji": true }, "url": "\(url)" }
+            """
+        } else {
+            """
+            { "type": "button", "text": { "type": "plain_text", "text": "\(text)", "emoji": true } }
+            """
+        }
+    }
+
+    public let text: String
+    public let url: String?
+
+    public init(_ text: String, url: String? = nil) {
+        self.text = text
+        self.url = url
+    }
+}
+
+/// A block of interactive elements (currently buttons), rendered as a row of controls.
+public struct Actions: BlockConvertible {
+    public var json: String {
+        let elements = buttons.map { $0.json }.joined(separator: ", ")
+
+        return """
+        { "type": "actions", "elements": [ \(elements) ] }
+        """
+    }
+
+    public let buttons: [Button]
+
+    public init(_ buttons: [Button]) {
+        self.buttons = buttons
+    }
+
+    public init(@SlackMessageButtonBuilder _ buttons: () -> [Button]) {
+        self.buttons = buttons()
+    }
+}

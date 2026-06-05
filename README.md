@@ -54,6 +54,27 @@ try await message.send(as: "slack_token")
 - Field sections
 - User and group mentions
 - Context
+- Action buttons
+
+### Action buttons
+
+Use the `Actions` block with one or more `Button` elements to add clickable link buttons. A button with a `url` opens it in the browser on click.
+
+```swift
+let message = SlackMessage(channel: "reports") {
+    MarkdownSection("UI tests finished :white_check_mark:")
+    Actions {
+        Button("Gitlab job", url: jobUrl)
+        Button("Allure launch", url: allureUrl)
+    }
+}
+```
+
+You can also build the block from an array of buttons, e.g. when filtering out entries without a URL:
+
+```swift
+Actions(buttons) // buttons: [Button]
+```
 
 ### Attachments
 
