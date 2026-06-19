@@ -44,7 +44,7 @@ struct SlackitoIntegrationTests {
         let imageMessage = SlackMessage(channel: channel, ts: result.timestamp) {
             MarkdownSection(
                 "Wow, an accessory image like avatars",
-                accessory: ImageAccessory(
+                imageAccessory: ImageAccessory(
                     url: imageURL,
                     text: "some text"
                 )
