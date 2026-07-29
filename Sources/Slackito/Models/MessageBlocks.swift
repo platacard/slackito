@@ -119,18 +119,19 @@ public struct FieldsSection: BlockConvertible {
 
 public struct Image: BlockConvertible {
     public var json: String {
-        """
-        {
-            "type": "image",
-            "title": {
-                "type": "plain_text",
-                "text": "\(text.jsonEscaped)",
-                "emoji": true
-            },
-            "image_url": "\(url.jsonEscaped)",
-            "alt_text": "\(text.jsonEscaped)"
+        let title = text.truncated(to: SlackLimits.imageTitle).jsonEscaped
+        let alt = text.truncated(to: SlackLimits.imageAltText).jsonEscaped
+        var fields = [
+            #""type": "image""#,
+            #""image_url": "\#(url.truncated(to: SlackLimits.url).jsonEscaped)""#,
+            #""alt_text": "\#(alt)""#
+        ]
+
+        if !text.isEmpty {
+            fields.insert(#""title": { "type": "plain_text", "text": "\#(title)", "emoji": true }"#, at: 1)
         }
-        """
+
+        return "{ \(fields.joined(separator: ", ")) }"
     }
 
     public let url: String
@@ -149,9 +150,10 @@ public struct ImageAccessory: Sendable {
     }
 
     var element: String {
-        """
-        { "type": "image", "image_url": "\(url.jsonEscaped)", "alt_text": "\(text.jsonEscaped)" }
-        """
+        let alt = text.truncated(to: SlackLimits.imageAltText).jsonEscaped
+        let source = url.truncated(to: SlackLimits.url).jsonEscaped
+
+        return #"{ "type": "image", "image_url": "\#(source)", "alt_text": "\#(alt)" }"#
     }
 
     public let url: String
@@ -183,7 +185,7 @@ public struct Context: BlockConvertible {
     public var json: String {
         let elements = markdownElements.prefix(SlackLimits.contextElements).map {
             """
-            { "type": "mrkdwn", "text": "\($0.markdown.truncated(to: SlackLimits.fieldText).jsonEscaped)" }
+            { "type": "mrkdwn", "text": "\($0.markdown.truncated(to: SlackLimits.contextText).jsonEscaped)" }
             """
         }.joined(separator: ", ")
 
@@ -217,13 +219,13 @@ public struct Button: Sendable {
         ]
 
         if let url, !url.isEmpty {
-            fields.append(#""url": "\#(url.jsonEscaped)""#)
+            fields.append(#""url": "\#(url.truncated(to: SlackLimits.url).jsonEscaped)""#)
         }
         if let style {
             fields.append(#""style": "\#(style.rawValue)""#)
         }
         if let actionId {
-            fields.append(#""action_id": "\#(actionId.jsonEscaped)""#)
+            fields.append(#""action_id": "\#(actionId.truncated(to: SlackLimits.actionId).jsonEscaped)""#)
         }
 
         return "{ \(fields.joined(separator: ", ")) }"

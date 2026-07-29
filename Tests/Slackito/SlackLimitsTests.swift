@@ -82,4 +82,71 @@ struct SlackLimitsTests {
 
         #expect(throws: SlackMessageError.emptyMessage) { try message.validate() }
     }
+
+    @Test
+    func truncationBudgetsCodeUnitsNotGraphemeClusters() throws {
+        let family = "\u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}\u{200D}\u{1F466}"
+
+        let rendered = try text(of: Header(String(repeating: family, count: 200)))
+
+        #expect(rendered.unicodeScalars.count <= SlackLimits.headerText)
+        #expect(rendered.hasSuffix("…"))
+    }
+
+    @Test
+    func truncationNeverSplitsAGraphemeCluster() {
+        let family = "\u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}\u{200D}\u{1F466}"
+
+        let truncated = String(repeating: family, count: 10).truncated(to: 20)
+
+        #expect(truncated.dropLast().allSatisfy { String($0) == family })
+    }
+
+    @Test
+    func optionValueUsesTheDocumentedLimitAndIsNotHalved() throws {
+        let value = String(repeating: "v", count: 140)
+        let section = MarkdownSection("t", accessory: .overflow(Overflow(options: [
+            Overflow.Option(text: "Job", value: value)
+        ])))
+
+        let object = try JSONSerialization.jsonObject(with: Data(section.json.utf8)) as? [String: Any]
+        let accessory = try #require(object?["accessory"] as? [String: Any])
+        let options = try #require(accessory["options"] as? [[String: Any]])
+
+        #expect(SlackLimits.optionValue == 150)
+        #expect(options[0]["value"] as? String == value)
+    }
+
+    @Test
+    func imageIsTruncatedLikeEveryOtherBlock() throws {
+        let block = Image(url: "https://example.com/" + String(repeating: "u", count: 4000),
+                          text: String(repeating: "a", count: 5000))
+
+        let object = try JSONSerialization.jsonObject(with: Data(block.json.utf8)) as? [String: Any]
+        let alt = try #require(object?["alt_text"] as? String)
+        let source = try #require(object?["image_url"] as? String)
+        let title = try #require((object?["title"] as? [String: Any])?["text"] as? String)
+
+        #expect(alt.count == SlackLimits.imageAltText)
+        #expect(title.count == SlackLimits.imageTitle)
+        #expect(source.count == SlackLimits.url)
+    }
+
+    @Test
+    func buttonUrlAndActionIdAreCapped() throws {
+        let button = Button("Retry",
+                            url: "https://example.com/" + String(repeating: "u", count: 4000),
+                            actionId: String(repeating: "i", count: 400))
+
+        let object = try JSONSerialization.jsonObject(with: Data(button.json.utf8)) as? [String: Any]
+
+        #expect((object?["url"] as? String)?.count == SlackLimits.url)
+        #expect((object?["action_id"] as? String)?.count == SlackLimits.actionId)
+    }
+
+    @Test
+    func aNonPositiveLimitDoesNotTrap() {
+        #expect("abcd".truncated(to: 0) == "")
+        #expect("abcd".truncated(to: -5) == "")
+    }
 }

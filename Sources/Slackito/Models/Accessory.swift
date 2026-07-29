@@ -39,14 +39,14 @@ public struct Overflow: Sendable {
                 #""value": "\#(value)""#
             ]
             if let url = option.url, !url.isEmpty {
-                fields.append(#""url": "\#(url.jsonEscaped)""#)
+                fields.append(#""url": "\#(url.truncated(to: SlackLimits.url).jsonEscaped)""#)
             }
             return "{ \(fields.joined(separator: ", ")) }"
         }.joined(separator: ", ")
 
         var fields = [#""type": "overflow""#]
         if let actionId {
-            fields.append(#""action_id": "\#(actionId.jsonEscaped)""#)
+            fields.append(#""action_id": "\#(actionId.truncated(to: SlackLimits.actionId).jsonEscaped)""#)
         }
         fields.append("\"options\": [ \(rendered) ]")
 
