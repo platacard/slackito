@@ -98,7 +98,7 @@ private extension SlackMessage {
         let requestJson = Slackito.FileUploadFinishedRequest(
             files: files.map { Slackito.File(id: $0.fileId, timestamp: nil) },
             channelId: channel,
-            threadTs: ts,
+            threadTs: threadTs ?? ts,
             blocks: "[ \(blocks.json) ]"
         )
         let encoder = JSONEncoder()

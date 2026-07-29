@@ -3,6 +3,18 @@ import XCTest
 
 @MainActor
 final class SlackitoTests: XCTestCase {
+
+    private func assertSameJSON(
+        _ actual: String,
+        _ expected: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws {
+        let actualObject = try JSONSerialization.jsonObject(with: Data(actual.utf8)) as? NSDictionary
+        let expectedObject = try JSONSerialization.jsonObject(with: Data(expected.utf8)) as? NSDictionary
+
+        XCTAssertEqual(actualObject, expectedObject, file: file, line: line)
+    }
     
     func test_BlockBuilderProducesRawJson() throws {
         let message = SlackMessage(channel: "test_channel") {
@@ -23,7 +35,7 @@ final class SlackitoTests: XCTestCase {
         }
         
         let expected = """
-        { "channel": "test_channel", "blocks": [ { "type": "header", "text": { "type": "plain_text", "text": "Test header" } } ] }
+        { "channel": "test_channel", "text": "Test header", "blocks": [ { "type": "header", "text": { "type": "plain_text", "text": "Test header" } } ] }
         """
         
         let actual = message.json
@@ -38,6 +50,7 @@ final class SlackitoTests: XCTestCase {
         let expected = """
         {
           "channel" : "test_channel",
+          "text" : "Test header",
           "blocks" : [
             {
               "type" : "header",
@@ -50,8 +63,7 @@ final class SlackitoTests: XCTestCase {
         }
         """
         
-        let actual = try message.json.prettify()
-        XCTAssertEqual(expected, actual)
+        try assertSameJSON(message.json, expected)
     }
     
     func test_BlockBuilderAndStringExtensionProducesPrettyJson() throws {
@@ -69,9 +81,7 @@ final class SlackitoTests: XCTestCase {
           ]
         }
         """
-        let actual = try message.json.prettify()
-        
-        XCTAssertEqual(expected, actual)
+        try assertSameJSON(message.json, expected)
     }
     
     func test_SectionBuilderProducesCorrectRawJson() throws {
@@ -119,8 +129,7 @@ final class SlackitoTests: XCTestCase {
         }
         """
         
-        let actual = try message.json.prettify()
-        XCTAssertEqual(expected, actual)
+        try assertSameJSON(message.json, expected)
     }
     
     func test_ContextBuilderProducesCorrectRawJson() throws {
@@ -168,8 +177,7 @@ final class SlackitoTests: XCTestCase {
         }
         """
         
-        let actual = try message.json.prettify()
-        XCTAssertEqual(expected, actual)
+        try assertSameJSON(message.json, expected)
     }
     
     func test_ComplexMessageBuilderProducesCorrectPrettyJson() throws {
@@ -188,9 +196,9 @@ final class SlackitoTests: XCTestCase {
         
         let expected = """
         {
-          "thread_ts" : "test_thread",
-          "ts" : "test_thread",
           "channel" : "test_channel",
+          "ts" : "test_thread",
+          "text" : "plain_text",
           "blocks" : [
             {
               "type" : "section",
@@ -236,8 +244,7 @@ final class SlackitoTests: XCTestCase {
         }
         """
         
-        let actual = try message.json.prettify()
-        XCTAssertEqual(expected, actual)
+        try assertSameJSON(message.json, expected)
     }
 
     func test_ActionsBuilderProducesCorrectRawJson() throws {
