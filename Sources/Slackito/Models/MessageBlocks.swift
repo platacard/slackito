@@ -27,9 +27,9 @@ public struct Divider: BlockConvertible {
 /// Header block. Plain text only, emoji possible
 public struct Header: BlockConvertible {
     public var json: String {
-        """
-        { "type": "header", "text": { "type": "plain_text", "text": "\(header.jsonEscaped)" } }
-        """
+        let text = header.truncated(to: SlackLimits.headerText).jsonEscaped
+
+        return #"{ "type": "header", "text": { "type": "plain_text", "text": "\#(text)" } }"#
     }
 
     public let header: String
@@ -42,9 +42,8 @@ public struct Header: BlockConvertible {
 /// Markdown text section. Used both inside `FieldsSection` and without it
 public struct MarkdownSection: MarkdownSectionConvertible, BlockConvertible {
     public var json: String {
-        let text = """
-        { "type": "section", "text": { "type": "mrkdwn", "text": "\(markdown.jsonEscaped)" }
-        """
+        let escaped = markdown.truncated(to: SlackLimits.sectionText).jsonEscaped
+        let text = #"{ "type": "section", "text": { "type": "mrkdwn", "text": "\#(escaped)" }"#
 
         guard let accessoryJSON = accessory?.json else { return "\(text) }" }
         return "\(text), \(accessoryJSON) }"
@@ -74,9 +73,8 @@ public struct MarkdownSection: MarkdownSectionConvertible, BlockConvertible {
 /// Plain text section, used in the message body to send a simple text
 public struct PlainSection: PlainSectionConvertible, BlockConvertible {
     public var json: String {
-        let text = """
-        { "type": "section", "text": { "type": "plain_text", "text": "\(plainText.jsonEscaped)" }
-        """
+        let escaped = plainText.truncated(to: SlackLimits.sectionText).jsonEscaped
+        let text = #"{ "type": "section", "text": { "type": "plain_text", "text": "\#(escaped)" }"#
 
         guard let accessoryJSON = accessory?.json else { return "\(text) }" }
         return "\(text), \(accessoryJSON) }"
@@ -101,9 +99,9 @@ public struct PlainSection: PlainSectionConvertible, BlockConvertible {
 /// 2 columns in a row on desktop, 1 column on mobile
 public struct FieldsSection: BlockConvertible {
     public var json: String {
-        let formattedSections = sections.map {
+        let formattedSections = sections.prefix(SlackLimits.fieldsPerSection).map {
             """
-            { "type": "mrkdwn", "text": "\($0.markdown.jsonEscaped)" }
+            { "type": "mrkdwn", "text": "\($0.markdown.truncated(to: SlackLimits.fieldText).jsonEscaped)" }
             """
         }.joined(separator: ", ")
 
@@ -191,9 +189,9 @@ public struct ButtonAccessory: Sendable {
 /// Usually used at the bottom of the message to provide some kind of context, e.g. app version or branch
 public struct Context: BlockConvertible {
     public var json: String {
-        let elements = markdownElements.map {
+        let elements = markdownElements.prefix(SlackLimits.contextElements).map {
             """
-            { "type": "mrkdwn", "text": "\($0.markdown.jsonEscaped)" }
+            { "type": "mrkdwn", "text": "\($0.markdown.truncated(to: SlackLimits.fieldText).jsonEscaped)" }
             """
         }.joined(separator: ", ")
 
@@ -214,9 +212,8 @@ public struct Context: BlockConvertible {
 /// When a `url` is provided, the button opens it in the browser on click.
 public struct Button: Sendable {
     public var json: String {
-        let element = """
-        { "type": "button", "text": { "type": "plain_text", "text": "\(text.jsonEscaped)", "emoji": true }
-        """
+        let escaped = text.truncated(to: SlackLimits.buttonText).jsonEscaped
+        let element = #"{ "type": "button", "text": { "type": "plain_text", "text": "\#(escaped)", "emoji": true }"#
 
         if let url {
             return "\(element), \"url\": \"\(url.jsonEscaped)\" }"
@@ -237,7 +234,7 @@ public struct Button: Sendable {
 /// A block of interactive elements (currently buttons), rendered as a row of controls.
 public struct Actions: BlockConvertible {
     public var json: String {
-        let elements = buttons.map { $0.json }.joined(separator: ", ")
+        let elements = buttons.prefix(SlackLimits.elementsPerActions).map { $0.json }.joined(separator: ", ")
 
         return """
         { "type": "actions", "elements": [ \(elements) ] }

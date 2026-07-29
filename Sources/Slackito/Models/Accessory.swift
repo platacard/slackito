@@ -28,14 +28,15 @@ public struct Overflow: Sendable {
     }
 
     var element: String? {
-        guard !options.isEmpty else { return nil }
+        let kept = Array(options.prefix(SlackLimits.optionsPerOverflow))
+        guard !kept.isEmpty else { return nil }
 
-        let rendered = options.enumerated().map { index, option in
+        let rendered = kept.enumerated().map { index, option in
+            let text = option.text.truncated(to: SlackLimits.optionText).jsonEscaped
+            let value = (option.value ?? "option_\(index)").truncated(to: SlackLimits.optionValue).jsonEscaped
             var fields = [
-                """
-                "text": { "type": "plain_text", "emoji": true, "text": "\(option.text.jsonEscaped)" }
-                """,
-                #""value": "\#((option.value ?? "option_\(index)").jsonEscaped)""#
+                #""text": { "type": "plain_text", "emoji": true, "text": "\#(text)" }"#,
+                #""value": "\#(value)""#
             ]
             if let url = option.url, !url.isEmpty {
                 fields.append(#""url": "\#(url.jsonEscaped)""#)

@@ -43,11 +43,19 @@ public struct SlackMessage: BlockConvertible {
             fields.append(#""thread_ts": "\#(threadTs.jsonEscaped)""#)
         }
         if let notificationText {
-            fields.append(#""text": "\#(notificationText.jsonEscaped)""#)
+            let text = notificationText.truncated(to: SlackLimits.notificationText).jsonEscaped
+            fields.append(#""text": "\#(text)""#)
         }
         fields.append("\"blocks\": [ \(blocks.json) ]")
 
         return "{ \(fields.joined(separator: ", ")) }"
+    }
+
+    public func validate() throws {
+        guard !blocks.isEmpty || !attachments.isEmpty else { throw SlackMessageError.emptyMessage }
+        guard blocks.count <= SlackLimits.blocksPerMessage else {
+            throw SlackMessageError.tooManyBlocks(count: blocks.count, limit: SlackLimits.blocksPerMessage)
+        }
     }
 
     var notificationText: String? {
