@@ -10,8 +10,12 @@ final class SlackitoTests: XCTestCase {
         file: StaticString = #filePath,
         line: UInt = #line
     ) throws {
-        let actualObject = try JSONSerialization.jsonObject(with: Data(actual.utf8)) as? NSDictionary
-        let expectedObject = try JSONSerialization.jsonObject(with: Data(expected.utf8)) as? NSDictionary
+        let actualObject = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: Data(actual.utf8)) as? NSDictionary, file: file, line: line
+        )
+        let expectedObject = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: Data(expected.utf8)) as? NSDictionary, file: file, line: line
+        )
 
         XCTAssertEqual(actualObject, expectedObject, file: file, line: line)
     }
@@ -93,7 +97,7 @@ final class SlackitoTests: XCTestCase {
         }
         
         let expected = """
-        { "channel": "test_channel", "blocks": [ { "type": "section", "fields": [ { "type": "mrkdwn", "text": "test" }, { "type": "mrkdwn", "text": "test" } ] } ] }
+        { "channel": "test_channel", "text": "test", "blocks": [ { "type": "section", "fields": [ { "type": "mrkdwn", "text": "test" }, { "type": "mrkdwn", "text": "test" } ] } ] }
         """
         
         let actual = message.json
@@ -111,6 +115,7 @@ final class SlackitoTests: XCTestCase {
         let expected = """
         {
           "channel" : "test_channel",
+          "text" : "test1",
           "blocks" : [
             {
               "type" : "section",
@@ -141,7 +146,7 @@ final class SlackitoTests: XCTestCase {
         }
         
         let expected = """
-        { "channel": "test_channel", "blocks": [ { "type": "context", "elements": [ { "type": "mrkdwn", "text": "test1" }, { "type": "mrkdwn", "text": "test2" } ] } ] }
+        { "channel": "test_channel", "text": "test1", "blocks": [ { "type": "context", "elements": [ { "type": "mrkdwn", "text": "test1" }, { "type": "mrkdwn", "text": "test2" } ] } ] }
         """
         
         let actual = message.json
@@ -159,6 +164,7 @@ final class SlackitoTests: XCTestCase {
         let expected = """
         {
           "channel" : "test_channel",
+          "text" : "test1",
           "blocks" : [
             {
               "type" : "context",

@@ -7,8 +7,7 @@ import Testing
 struct ButtonTests {
 
     private func element(of button: Button) throws -> [String: Any] {
-        let object = try JSONSerialization.jsonObject(with: Data(button.json.utf8)) as? [String: Any]
-        return try #require(object)
+        try #require(JSONSerialization.jsonObject(with: Data(button.json.utf8)) as? [String: Any])
     }
 
     @Test

@@ -65,6 +65,10 @@ public struct SlackMessage: BlockConvertible {
         }
     }
 
+    public var warnings: [String] {
+        blocks.renderable.flatMap { ($0 as? DroppedContentReporting)?.droppedContent ?? [] }
+    }
+
     var notificationText: String? {
         if let text, !text.isEmpty { return text }
         for block in blocks {

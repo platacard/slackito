@@ -7,8 +7,8 @@ import Testing
 struct BlockSnapshotTests {
 
     private func expect(_ block: BlockConvertible, rendersAs expected: String) throws {
-        let actual = try JSONSerialization.jsonObject(with: Data(block.json.utf8)) as? NSDictionary
-        let wanted = try JSONSerialization.jsonObject(with: Data(expected.utf8)) as? NSDictionary
+        let actual = try #require(JSONSerialization.jsonObject(with: Data(block.json.utf8)) as? NSDictionary)
+        let wanted = try #require(JSONSerialization.jsonObject(with: Data(expected.utf8)) as? NSDictionary)
 
         #expect(actual == wanted)
     }

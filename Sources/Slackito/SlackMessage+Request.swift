@@ -8,6 +8,7 @@ extension SlackMessage {
     @discardableResult
     public func send(as appToken: String?, verbose: Bool = false) async throws -> MessageMeta {
         try validate()
+        warnings.forEach { logger.warning("\($0)") }
         let api = try Slackito(appToken: appToken, verbose: verbose)
 
         if attachments.isEmpty {
@@ -31,6 +32,7 @@ extension SlackMessage {
     @discardableResult
     public func update(as appToken: String?, verbose: Bool = false) async throws -> MessageMeta {
         try validate()
+        warnings.forEach { logger.warning("\($0)") }
         let api = try Slackito(appToken: appToken, verbose: verbose)
 
         if attachments.isEmpty {
