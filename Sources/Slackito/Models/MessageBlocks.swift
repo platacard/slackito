@@ -143,6 +143,7 @@ public struct Image: BlockConvertible {
 }
 
 public struct ImageAccessory: Sendable {
+    @available(*, deprecated, message: "Use Accessory.image(_:) instead")
     public var json: String {
         #""accessory": \#(element)"#
     }
@@ -162,19 +163,10 @@ public struct ImageAccessory: Sendable {
     }
 }
 
+@available(*, deprecated, message: "Use Accessory.button(Button(_:url:)) instead")
 public struct ButtonAccessory: Sendable {
     public var json: String {
-        """
-        "accessory": {
-            "type": "button",
-            "text": {
-                "type": "plain_text",
-                "emoji": true,
-                "text": "\(text.jsonEscaped)"
-            },
-            "url": "\(url.jsonEscaped)"
-        }
-        """
+        #""accessory": \#(Button(text, url: url).json)"#
     }
 
     public let url: String
@@ -211,23 +203,42 @@ public struct Context: BlockConvertible {
 ///
 /// When a `url` is provided, the button opens it in the browser on click.
 public struct Button: Sendable {
+
+    public enum Style: String, Sendable {
+        case primary
+        case danger
+    }
+
     public var json: String {
         let escaped = text.truncated(to: SlackLimits.buttonText).jsonEscaped
-        let element = #"{ "type": "button", "text": { "type": "plain_text", "text": "\#(escaped)", "emoji": true }"#
+        var fields = [
+            #""type": "button""#,
+            #""text": { "type": "plain_text", "text": "\#(escaped)", "emoji": true }"#
+        ]
 
-        if let url {
-            return "\(element), \"url\": \"\(url.jsonEscaped)\" }"
-        } else {
-            return "\(element) }"
+        if let url, !url.isEmpty {
+            fields.append(#""url": "\#(url.jsonEscaped)""#)
         }
+        if let style {
+            fields.append(#""style": "\#(style.rawValue)""#)
+        }
+        if let actionId {
+            fields.append(#""action_id": "\#(actionId.jsonEscaped)""#)
+        }
+
+        return "{ \(fields.joined(separator: ", ")) }"
     }
 
     public let text: String
     public let url: String?
+    public let style: Style?
+    public let actionId: String?
 
-    public init(_ text: String, url: String? = nil) {
+    public init(_ text: String, url: String? = nil, style: Style? = nil, actionId: String? = nil) {
         self.text = text
         self.url = url
+        self.style = style
+        self.actionId = actionId
     }
 }
 

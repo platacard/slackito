@@ -21,9 +21,12 @@ struct BlockJSONValidityTests {
             Divider(),
             Header(dirty),
             MarkdownSection(dirty),
-            MarkdownSection(dirty, imageAccessory: ImageAccessory(url: dirty, text: dirty)),
-            MarkdownSection(dirty, buttonAccessory: ButtonAccessory(url: dirty, text: dirty)),
-            PlainSection(dirty, accessory: ImageAccessory(url: dirty, text: dirty)),
+            MarkdownSection(dirty, accessory: .image(ImageAccessory(url: dirty, text: dirty))),
+            MarkdownSection(dirty, accessory: .button(Button(dirty, url: dirty))),
+            MarkdownSection(dirty, accessory: .overflow(Overflow(actionId: dirty) {
+                Overflow.Option(text: dirty, url: dirty, value: dirty)
+            })),
+            PlainSection(dirty, accessory: .image(ImageAccessory(url: dirty, text: dirty))),
             FieldsSection { dirty; dirty },
             Context { dirty },
             Image(url: dirty, text: dirty),
