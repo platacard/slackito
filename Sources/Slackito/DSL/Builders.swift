@@ -123,3 +123,33 @@ public enum SlackMessageButtonBuilder {
         components.flatMap { $0 }
     }
 }
+
+@resultBuilder
+public enum SlackMessageOverflowOptionBuilder {
+    public typealias Expression = Overflow.Option
+    public typealias Component = [Overflow.Option]
+
+    public static func buildExpression(_ expression: Expression) -> Component {
+        [expression]
+    }
+
+    public static func buildBlock(_ components: Component...) -> Component {
+        components.flatMap { $0 }
+    }
+
+    public static func buildOptional(_ component: Component?) -> Component {
+        component ?? []
+    }
+
+    public static func buildEither(first component: Component) -> Component {
+        component
+    }
+
+    public static func buildEither(second component: Component) -> Component {
+        component
+    }
+
+    public static func buildArray(_ components: [Component]) -> Component {
+        components.flatMap { $0 }
+    }
+}

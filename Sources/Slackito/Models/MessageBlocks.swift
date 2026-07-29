@@ -46,23 +46,28 @@ public struct MarkdownSection: MarkdownSectionConvertible, BlockConvertible {
         { "type": "section", "text": { "type": "mrkdwn", "text": "\(markdown.jsonEscaped)" }
         """
 
-        if let imageAccessory {
-            return "\(text), \(imageAccessory.json) }"
-        } else if let buttonAccessory {
-            return "\(text), \(buttonAccessory.json) }"
-        } else {
-            return "\(text) }"
-        }
+        guard let accessoryJSON = accessory?.json else { return "\(text) }" }
+        return "\(text), \(accessoryJSON) }"
     }
 
     public let markdown: String
-    public let imageAccessory: ImageAccessory?
-    public let buttonAccessory: ButtonAccessory?
+    public let accessory: Accessory?
 
-    public init(_ markdown: String, imageAccessory: ImageAccessory? = nil, buttonAccessory: ButtonAccessory? = nil) {
+    public init(_ markdown: String, accessory: Accessory? = nil) {
         self.markdown = markdown
-        self.imageAccessory = imageAccessory
-        self.buttonAccessory = buttonAccessory
+        self.accessory = accessory
+    }
+
+    @available(*, deprecated, message: "Use init(_:accessory:) with .image instead")
+    public init(_ markdown: String, imageAccessory: ImageAccessory?) {
+        self.markdown = markdown
+        self.accessory = imageAccessory.map(Accessory.image)
+    }
+
+    @available(*, deprecated, message: "Use init(_:accessory:) with .button instead")
+    public init(_ markdown: String, buttonAccessory: ButtonAccessory?) {
+        self.markdown = markdown
+        self.accessory = buttonAccessory.map { Accessory.button(Button($0.text, url: $0.url)) }
     }
 }
 
@@ -73,19 +78,22 @@ public struct PlainSection: PlainSectionConvertible, BlockConvertible {
         { "type": "section", "text": { "type": "plain_text", "text": "\(plainText.jsonEscaped)" }
         """
 
-        if let accessory {
-            return "\(text), \(accessory.json) }"
-        } else {
-            return "\(text) }"
-        }
+        guard let accessoryJSON = accessory?.json else { return "\(text) }" }
+        return "\(text), \(accessoryJSON) }"
     }
 
     public let plainText: String
-    public let accessory: ImageAccessory?
+    public let accessory: Accessory?
 
-    public init(_ plainText: String, accessory: ImageAccessory? = nil) {
+    public init(_ plainText: String, accessory: Accessory? = nil) {
         self.plainText = plainText
         self.accessory = accessory
+    }
+
+    @available(*, deprecated, message: "Use init(_:accessory:) with .image instead")
+    public init(_ plainText: String, accessory: ImageAccessory?) {
+        self.plainText = plainText
+        self.accessory = accessory.map(Accessory.image)
     }
 }
 
@@ -138,12 +146,12 @@ public struct Image: BlockConvertible {
 
 public struct ImageAccessory: Sendable {
     public var json: String {
+        #""accessory": \#(element)"#
+    }
+
+    var element: String {
         """
-        "accessory": {
-            "type": "image",
-            "image_url": "\(url.jsonEscaped)",
-            "alt_text": "\(text.jsonEscaped)"
-        }
+        { "type": "image", "image_url": "\(url.jsonEscaped)", "alt_text": "\(text.jsonEscaped)" }
         """
     }
 
