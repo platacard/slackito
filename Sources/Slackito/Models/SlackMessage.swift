@@ -46,21 +46,31 @@ public struct SlackMessage: BlockConvertible {
             let text = notificationText.truncated(to: SlackLimits.notificationText).jsonEscaped
             fields.append(#""text": "\#(text)""#)
         }
-        fields.append("\"blocks\": [ \(blocks.json) ]")
+        let renderable = blocks.renderable
+        if !renderable.isEmpty {
+            fields.append("\"blocks\": [ \(renderable.json) ]")
+        }
 
         return "{ \(fields.joined(separator: ", ")) }"
     }
 
     public func validate() throws {
-        guard !blocks.isEmpty || !attachments.isEmpty else { throw SlackMessageError.emptyMessage }
-        guard blocks.count <= SlackLimits.blocksPerMessage else {
-            throw SlackMessageError.tooManyBlocks(count: blocks.count, limit: SlackLimits.blocksPerMessage)
+        let renderable = blocks.renderable
+
+        guard !renderable.isEmpty || !attachments.isEmpty || notificationText != nil else {
+            throw SlackMessageError.emptyMessage
+        }
+        guard renderable.count <= SlackLimits.blocksPerMessage else {
+            throw SlackMessageError.tooManyBlocks(count: renderable.count, limit: SlackLimits.blocksPerMessage)
         }
     }
 
     var notificationText: String? {
         if let text, !text.isEmpty { return text }
-        return blocks.lazy.compactMap { ($0 as? FallbackTextProviding)?.fallbackText }.first
+        for block in blocks {
+            if let fallback = (block as? FallbackTextProviding)?.fallbackText { return fallback }
+        }
+        return nil
     }
 
     public init(

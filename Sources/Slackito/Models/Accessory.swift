@@ -62,7 +62,7 @@ public enum Accessory: Sendable {
     var json: String? {
         switch self {
         case .image(let image):
-            #""accessory": \#(image.element)"#
+            image.url.isEmpty ? nil : #""accessory": \#(image.element)"#
         case .button(let button):
             #""accessory": \#(button.json)"#
         case .overflow(let overflow):
