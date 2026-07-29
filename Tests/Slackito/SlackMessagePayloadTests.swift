@@ -32,7 +32,7 @@ struct SlackMessagePayloadTests {
     }
 
     @Test
-    func updateSendsTsWithoutTurningTheMessageIntoAReply() throws {
+    func tsStillActsAsTheParentSoExistingRepliesKeepThreading() throws {
         let message = SlackMessage(channel: "C1", ts: "1785317000.244939") {
             Header("Run UI tests result")
         }
@@ -40,7 +40,19 @@ struct SlackMessagePayloadTests {
         let payload = try payload(of: message)
 
         #expect(payload["ts"] as? String == "1785317000.244939")
-        #expect(payload["thread_ts"] == nil)
+        #expect(payload["thread_ts"] as? String == "1785317000.244939")
+    }
+
+    @Test
+    func threadTsWinsOverTsWhenBothAreGiven() throws {
+        let message = SlackMessage(channel: "C1", ts: "111.111", threadTs: "222.222") {
+            Header("Run UI tests result")
+        }
+
+        let payload = try payload(of: message)
+
+        #expect(payload["ts"] as? String == "111.111")
+        #expect(payload["thread_ts"] as? String == "222.222")
     }
 
     @Test

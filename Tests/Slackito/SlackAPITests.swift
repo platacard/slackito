@@ -198,6 +198,7 @@ final class SlackitoTests: XCTestCase {
         {
           "channel" : "test_channel",
           "ts" : "test_thread",
+          "thread_ts" : "test_thread",
           "text" : "plain_text",
           "blocks" : [
             {

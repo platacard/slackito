@@ -39,8 +39,8 @@ public struct SlackMessage: BlockConvertible {
         if let ts {
             fields.append(#""ts": "\#(ts.jsonEscaped)""#)
         }
-        if let threadTs {
-            fields.append(#""thread_ts": "\#(threadTs.jsonEscaped)""#)
+        if let parent = threadTs ?? ts {
+            fields.append(#""thread_ts": "\#(parent.jsonEscaped)""#)
         }
         if let notificationText {
             let text = notificationText.truncated(to: SlackLimits.notificationText).jsonEscaped
