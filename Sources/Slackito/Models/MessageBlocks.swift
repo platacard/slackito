@@ -28,7 +28,7 @@ public struct Divider: BlockConvertible {
 public struct Header: BlockConvertible {
     public var json: String {
         """
-        { "type": "header", "text": { "type": "plain_text", "text": "\(header)" } }
+        { "type": "header", "text": { "type": "plain_text", "text": "\(header.jsonEscaped)" } }
         """
     }
 
@@ -42,18 +42,16 @@ public struct Header: BlockConvertible {
 /// Markdown text section. Used both inside `FieldsSection` and without it
 public struct MarkdownSection: MarkdownSectionConvertible, BlockConvertible {
     public var json: String {
+        let text = """
+        { "type": "section", "text": { "type": "mrkdwn", "text": "\(markdown.jsonEscaped)" }
+        """
+
         if let imageAccessory {
-            return """
-            { "type": "section", "text": { "type": "mrkdwn", "text": "\(markdown)" }, \(imageAccessory.json) }
-            """
+            return "\(text), \(imageAccessory.json) }"
         } else if let buttonAccessory {
-            return """
-            { "type": "section", "text": { "type": "mrkdwn", "text": "\(markdown)" }, \(buttonAccessory.json) }
-            """
+            return "\(text), \(buttonAccessory.json) }"
         } else {
-            return """
-            { "type": "section", "text": { "type": "mrkdwn", "text": "\(markdown)" } }
-            """
+            return "\(text) }"
         }
     }
 
@@ -71,14 +69,14 @@ public struct MarkdownSection: MarkdownSectionConvertible, BlockConvertible {
 /// Plain text section, used in the message body to send a simple text
 public struct PlainSection: PlainSectionConvertible, BlockConvertible {
     public var json: String {
+        let text = """
+        { "type": "section", "text": { "type": "plain_text", "text": "\(plainText.jsonEscaped)" }
+        """
+
         if let accessory {
-            return """
-            { "type": "section", "text": { "type": "plain_text", "text": "\(plainText)" }, \(accessory.json) }
-            """
+            return "\(text), \(accessory.json) }"
         } else {
-            return """
-            { "type": "section", "text": { "type": "plain_text", "text": "\(plainText)" } }
-            """
+            return "\(text) }"
         }
     }
 
@@ -97,7 +95,7 @@ public struct FieldsSection: BlockConvertible {
     public var json: String {
         let formattedSections = sections.map {
             """
-            { "type": "mrkdwn", "text": "\($0.markdown)" }
+            { "type": "mrkdwn", "text": "\($0.markdown.jsonEscaped)" }
             """
         }.joined(separator: ", ")
 
@@ -120,11 +118,11 @@ public struct Image: BlockConvertible {
             "type": "image",
             "title": {
                 "type": "plain_text",
-                "text": "\(text)",
+                "text": "\(text.jsonEscaped)",
                 "emoji": true
             },
-            "image_url": "\(url)",
-            "alt_text": "\(text)"
+            "image_url": "\(url.jsonEscaped)",
+            "alt_text": "\(text.jsonEscaped)"
         }
         """
     }
@@ -143,8 +141,8 @@ public struct ImageAccessory: Sendable {
         """
         "accessory": {
             "type": "image",
-            "image_url": "\(url)",
-            "alt_text": "\(text)"
+            "image_url": "\(url.jsonEscaped)",
+            "alt_text": "\(text.jsonEscaped)"
         }
         """
     }
@@ -166,9 +164,9 @@ public struct ButtonAccessory: Sendable {
             "text": {
                 "type": "plain_text",
                 "emoji": true,
-                "text": "\(text)"
+                "text": "\(text.jsonEscaped)"
             },
-            "url": "\(url)"
+            "url": "\(url.jsonEscaped)"
         }
         """
     }
@@ -187,7 +185,7 @@ public struct Context: BlockConvertible {
     public var json: String {
         let elements = markdownElements.map {
             """
-            { "type": "mrkdwn", "text": "\($0.markdown)" }
+            { "type": "mrkdwn", "text": "\($0.markdown.jsonEscaped)" }
             """
         }.joined(separator: ", ")
 
@@ -208,14 +206,14 @@ public struct Context: BlockConvertible {
 /// When a `url` is provided, the button opens it in the browser on click.
 public struct Button: Sendable {
     public var json: String {
+        let element = """
+        { "type": "button", "text": { "type": "plain_text", "text": "\(text.jsonEscaped)", "emoji": true }
+        """
+
         if let url {
-            return """
-            { "type": "button", "text": { "type": "plain_text", "text": "\(text)", "emoji": true }, "url": "\(url)" }
-            """
+            return "\(element), \"url\": \"\(url.jsonEscaped)\" }"
         } else {
-            return """
-            { "type": "button", "text": { "type": "plain_text", "text": "\(text)", "emoji": true } }
-            """
+            return "\(element) }"
         }
     }
 

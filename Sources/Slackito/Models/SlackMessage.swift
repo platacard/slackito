@@ -32,11 +32,12 @@ public struct SlackMessage: BlockConvertible {
     public var json: String {
         if let ts {
             """
-            { "channel": "\(channel)", "thread_ts": "\(ts)", "ts": "\(ts)", "blocks": [ \(blocks.json) ] }
+            { "channel": "\(channel.jsonEscaped)", "thread_ts": "\(ts.jsonEscaped)", \
+            "ts": "\(ts.jsonEscaped)", "blocks": [ \(blocks.json) ] }
             """
         } else {
             """
-            { "channel": "\(channel)", "blocks": [ \(blocks.json) ] }
+            { "channel": "\(channel.jsonEscaped)", "blocks": [ \(blocks.json) ] }
             """
         }
     }
