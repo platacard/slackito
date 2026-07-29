@@ -27,7 +27,7 @@ public struct Overflow: Sendable {
         self.actionId = actionId
     }
 
-    var element: String? {
+    public var element: String? {
         let kept = Array(options.prefix(SlackLimits.optionsPerOverflow))
         guard !kept.isEmpty else { return nil }
 
@@ -59,7 +59,7 @@ public enum Accessory: Sendable {
     case button(Button)
     case overflow(Overflow)
 
-    var json: String? {
+    public var json: String? {
         switch self {
         case .image(let image):
             image.url.isEmpty ? nil : #""accessory": \#(image.element)"#

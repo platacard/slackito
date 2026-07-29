@@ -68,6 +68,25 @@ public struct MarkdownSection: MarkdownSectionConvertible, BlockConvertible {
         self.markdown = markdown
         self.accessory = buttonAccessory.map { Accessory.button(Button($0.text, url: $0.url)) }
     }
+
+    @available(*, deprecated, message: "A section carries one accessory: use init(_:accessory:)")
+    public init(_ markdown: String, imageAccessory: ImageAccessory?, buttonAccessory: ButtonAccessory?) {
+        self.markdown = markdown
+        self.accessory = imageAccessory.map(Accessory.image)
+            ?? buttonAccessory.map { Accessory.button(Button($0.text, url: $0.url)) }
+    }
+
+    @available(*, deprecated, message: "Use accessory and match .image")
+    public var imageAccessory: ImageAccessory? {
+        guard case .image(let image) = accessory else { return nil }
+        return image
+    }
+
+    @available(*, deprecated, message: "Use accessory and match .button")
+    public var buttonAccessory: ButtonAccessory? {
+        guard case .button(let button) = accessory, let url = button.url else { return nil }
+        return ButtonAccessory(url: url, text: button.text)
+    }
 }
 
 /// Plain text section, used in the message body to send a simple text
@@ -89,9 +108,22 @@ public struct PlainSection: PlainSectionConvertible, BlockConvertible {
     }
 
     @available(*, deprecated, message: "Use init(_:accessory:) with .image instead")
+    public init(_ plainText: String, imageAccessory: ImageAccessory?) {
+        self.plainText = plainText
+        self.accessory = imageAccessory.map(Accessory.image)
+    }
+
+    @_disfavoredOverload
+    @available(*, deprecated, message: "Use init(_:accessory:) with .image instead")
     public init(_ plainText: String, accessory: ImageAccessory?) {
         self.plainText = plainText
         self.accessory = accessory.map(Accessory.image)
+    }
+
+    @available(*, deprecated, message: "Use accessory and match .image")
+    public var imageAccessory: ImageAccessory? {
+        guard case .image(let image) = accessory else { return nil }
+        return image
     }
 }
 
@@ -144,12 +176,12 @@ public struct Image: BlockConvertible {
 }
 
 public struct ImageAccessory: Sendable {
-    @available(*, deprecated, message: "Use Accessory.image(_:) instead")
+    @available(*, deprecated, message: "Use Accessory.image(_:) and pass it to a section's accessory:")
     public var json: String {
         #""accessory": \#(element)"#
     }
 
-    var element: String {
+    public var element: String {
         let alt = text.truncated(to: SlackLimits.imageAltText).jsonEscaped
         let source = url.truncated(to: SlackLimits.url).jsonEscaped
 
@@ -165,7 +197,7 @@ public struct ImageAccessory: Sendable {
     }
 }
 
-@available(*, deprecated, message: "Use Accessory.button(Button(_:url:)) instead")
+@available(*, deprecated, message: "Use Accessory.button(Button(_:url:)) and pass it to a section's accessory:")
 public struct ButtonAccessory: Sendable {
     public var json: String {
         #""accessory": \#(Button(text, url: url).json)"#
