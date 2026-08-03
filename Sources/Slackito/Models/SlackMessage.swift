@@ -12,10 +12,14 @@ public struct SlackMessage: BlockConvertible {
     ///
     /// Better to have an id in a `C061Z3P47RB` format to use both post and update methods
     let channel: String
-    /// Thread timestamp to reply to or update
-    ///
-    /// `ts` is provided in different formats  for both `post` and `update` methods
+    /// Timestamp of the message to update
     let ts: String?
+    /// Timestamp of the parent message to reply to
+    let threadTs: String?
+    /// Notification fallback shown in push notifications and in the channel list
+    ///
+    /// Derived from the first block that carries text when not provided
+    let text: String?
     /// Building blocks of a message
     ///
     /// Result builder DSL to make a message
@@ -30,34 +34,92 @@ public struct SlackMessage: BlockConvertible {
     #endif
 
     public var json: String {
+        var fields = [#""channel": "\#(channel.jsonEscaped)""#]
+
         if let ts {
-            """
-            { "channel": "\(channel)", "thread_ts": "\(ts)", "ts": "\(ts)", "blocks": [ \(blocks.json) ] }
-            """
-        } else {
-            """
-            { "channel": "\(channel)", "blocks": [ \(blocks.json) ] }
-            """
+            fields.append(#""ts": "\#(ts.jsonEscaped)""#)
+        }
+        if let parent = threadTs ?? ts {
+            fields.append(#""thread_ts": "\#(parent.jsonEscaped)""#)
+        }
+        if let notificationText {
+            let text = notificationText.truncated(to: SlackLimits.notificationText).jsonEscaped
+            fields.append(#""text": "\#(text)""#)
+        }
+        let renderable = blocks.renderable
+        if !renderable.isEmpty {
+            fields.append("\"blocks\": [ \(renderable.json) ]")
+        }
+
+        return "{ \(fields.joined(separator: ", ")) }"
+    }
+
+    public func validate() throws {
+        let renderable = blocks.renderable
+
+        guard !renderable.isEmpty || !attachments.isEmpty || notificationText != nil else {
+            throw SlackMessageError.emptyMessage
+        }
+        guard renderable.count <= SlackLimits.blocksPerMessage else {
+            throw SlackMessageError.tooManyBlocks(count: renderable.count, limit: SlackLimits.blocksPerMessage)
         }
     }
-    
-    public init(channel: String, ts: String? = nil, @SlackMessageBuilder _ makeBlocks: () -> [BlockConvertible]) {
+
+    public var warnings: [String] {
+        blocks.renderable.flatMap { ($0 as? DroppedContentReporting)?.droppedContent ?? [] }
+    }
+
+    var notificationText: String? {
+        if let text, !text.isEmpty { return text }
+        for block in blocks {
+            if let fallback = (block as? FallbackTextProviding)?.fallbackText { return fallback }
+        }
+        return nil
+    }
+
+    public init(
+        channel: String,
+        ts: String? = nil,
+        threadTs: String? = nil,
+        text: String? = nil,
+        @SlackMessageBuilder _ makeBlocks: () -> [BlockConvertible]
+    ) {
         self.channel = channel
         self.ts = ts
+        self.threadTs = threadTs
+        self.text = text
         self.blocks = makeBlocks()
         self.attachments = []
     }
-    
-    public init(channel: String, ts: String? = nil, attachments: [SlackAttachment] = [], @SlackMessageBuilder _ makeBlocks: () -> [BlockConvertible]) {
+
+    public init(
+        channel: String,
+        ts: String? = nil,
+        threadTs: String? = nil,
+        text: String? = nil,
+        attachments: [SlackAttachment] = [],
+        @SlackMessageBuilder _ makeBlocks: () -> [BlockConvertible]
+    ) {
         self.channel = channel
         self.ts = ts
+        self.threadTs = threadTs
+        self.text = text
         self.blocks = makeBlocks()
         self.attachments = attachments
     }
 
-    public init(channel: String, ts: String? = nil, blocks: [BlockConvertible], attachments: [SlackAttachment] = []) {
+    public init(
+        channel: String,
+        ts: String? = nil,
+        threadTs: String? = nil,
+        text: String? = nil,
+        blocks: [BlockConvertible],
+        attachments: [SlackAttachment] = []
+    ) {
         self.channel = channel
         self.ts = ts
+        self.threadTs = threadTs
+        self.text = text
         self.blocks = blocks
         self.attachments = attachments
     }

@@ -23,7 +23,7 @@ dependencies: [
 ```swift
 let meta = try meta(...)
 
-let message = SlackMessage(channel: "some_channed", ts: "thread_timestamp") {
+let message = SlackMessage(channel: "some_channel", threadTs: "parent_timestamp") {
     MarkdownSection(
         ":gitlab-success: \(meta.jobUrl) of *\(meta.appName) (\(bundleId))* has finished successfully!"
     )
@@ -90,10 +90,10 @@ let message = SlackMessage(
 ) {
     MarkdownSection(
         "📊 Here's the monthly report with data!",
-        accessory: ImageAccessory(
+        accessory: .image(ImageAccessory(
             url: "https://example.com/image.jpg",
             text: "Report thumbnail"
-        )
+        ))
     )
 
     Image(url: "https://example.com/image.jpg", text: "report_jpg")
@@ -135,3 +135,49 @@ try await message.send(as: "slack_token")
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
 > Author: [@havebeenfitz](https://github.com/havebeenfitz)
+
+## Accessories
+
+A section carries at most one accessory, expressed as an `Accessory`:
+
+```swift
+MarkdownSection("*PaymentsOnBuild*\n:approved: *Passed:* 9", accessory: .button(Button("Job", url: jobUrl)))
+MarkdownSection("Report thumbnail", accessory: .image(ImageAccessory(url: imageUrl, text: "thumbnail")))
+MarkdownSection("*PaymentsOnBuild*", accessory: .overflow(Overflow(actionId: "report_links") {
+    Overflow.Option(text: ":gitlab: Job", url: jobUrl)
+    Overflow.Option(text: ":allure2: Launch", url: allureUrl)
+}))
+```
+
+Overflow options open their `url` in the browser, but Slack still dispatches a
+`block_actions` payload for the click. An app without an interactivity Request URL
+that answers 200 within three seconds shows the user an error, so use an overflow
+only from an app that handles interactions.
+
+## Limits and validation
+
+`SlackLimits` holds Slack's documented caps. Blocks truncate their text and drop
+elements past a limit while rendering, and `SlackMessage.validate()` — called by
+`send()` and `update()` — throws `SlackMessageError` before the request leaves the
+process, so an oversized message fails with a diagnostic instead of a silent
+`invalid_blocks`. Anything that was dropped is listed in `SlackMessage.warnings`
+and logged on send.
+
+A block that cannot be rendered legally — an empty header, an empty section, an
+actions row with no buttons — is left out of the payload rather than sent for
+Slack to reject.
+
+## Migrating from 1.x
+
+- **Escaping moved into the package.** Blocks now escape every string they
+  interpolate. Delete your own JSON escaping, and pass real `"\n"` characters
+  instead of a literal backslash-n — otherwise both are escaped twice and the
+  escape sequences become visible text.
+- **`text` is sent as the notification fallback.** It is derived from the first
+  block that carries text when you do not pass `text:` explicitly.
+- **`ts:` vs `threadTs:`.** `ts:` still acts as the thread parent, so existing
+  replies keep working; use `threadTs:` for a reply and `ts:` for the message you
+  are updating when you need to address them separately.
+- **One accessory per section.** `imageAccessory:` / `buttonAccessory:` and the
+  `ImageAccessory.json` / `ButtonAccessory` renderers still work and are
+  deprecated in favour of `accessory:` with `.image` / `.button` / `.overflow`.

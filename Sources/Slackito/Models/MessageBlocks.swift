@@ -27,9 +27,9 @@ public struct Divider: BlockConvertible {
 /// Header block. Plain text only, emoji possible
 public struct Header: BlockConvertible {
     public var json: String {
-        """
-        { "type": "header", "text": { "type": "plain_text", "text": "\(header)" } }
-        """
+        let text = header.truncated(to: SlackLimits.headerText).jsonEscaped
+
+        return #"{ "type": "header", "text": { "type": "plain_text", "text": "\#(text)" } }"#
     }
 
     public let header: String
@@ -42,52 +42,88 @@ public struct Header: BlockConvertible {
 /// Markdown text section. Used both inside `FieldsSection` and without it
 public struct MarkdownSection: MarkdownSectionConvertible, BlockConvertible {
     public var json: String {
-        if let imageAccessory {
-            return """
-            { "type": "section", "text": { "type": "mrkdwn", "text": "\(markdown)" }, \(imageAccessory.json) }
-            """
-        } else if let buttonAccessory {
-            return """
-            { "type": "section", "text": { "type": "mrkdwn", "text": "\(markdown)" }, \(buttonAccessory.json) }
-            """
-        } else {
-            return """
-            { "type": "section", "text": { "type": "mrkdwn", "text": "\(markdown)" } }
-            """
-        }
+        let escaped = markdown.truncated(to: SlackLimits.sectionText).jsonEscaped
+        let text = #"{ "type": "section", "text": { "type": "mrkdwn", "text": "\#(escaped)" }"#
+
+        guard let accessoryJSON = accessory?.json else { return "\(text) }" }
+        return "\(text), \(accessoryJSON) }"
     }
 
     public let markdown: String
-    public let imageAccessory: ImageAccessory?
-    public let buttonAccessory: ButtonAccessory?
+    public let accessory: Accessory?
 
-    public init(_ markdown: String, imageAccessory: ImageAccessory? = nil, buttonAccessory: ButtonAccessory? = nil) {
+    public init(_ markdown: String, accessory: Accessory? = nil) {
         self.markdown = markdown
-        self.imageAccessory = imageAccessory
-        self.buttonAccessory = buttonAccessory
+        self.accessory = accessory
+    }
+
+    @available(*, deprecated, message: "Use init(_:accessory:) with .image instead")
+    public init(_ markdown: String, imageAccessory: ImageAccessory?) {
+        self.markdown = markdown
+        self.accessory = imageAccessory.map(Accessory.image)
+    }
+
+    @available(*, deprecated, message: "Use init(_:accessory:) with .button instead")
+    public init(_ markdown: String, buttonAccessory: ButtonAccessory?) {
+        self.markdown = markdown
+        self.accessory = buttonAccessory.map { Accessory.button(Button($0.text, url: $0.url)) }
+    }
+
+    @available(*, deprecated, message: "A section carries one accessory: use init(_:accessory:)")
+    public init(_ markdown: String, imageAccessory: ImageAccessory?, buttonAccessory: ButtonAccessory?) {
+        self.markdown = markdown
+        self.accessory = imageAccessory.map(Accessory.image)
+            ?? buttonAccessory.map { Accessory.button(Button($0.text, url: $0.url)) }
+    }
+
+    @available(*, deprecated, message: "Use accessory and match .image")
+    public var imageAccessory: ImageAccessory? {
+        guard case .image(let image) = accessory else { return nil }
+        return image
+    }
+
+    @available(*, deprecated, message: "Use accessory and match .button")
+    public var buttonAccessory: ButtonAccessory? {
+        guard case .button(let button) = accessory, let url = button.url else { return nil }
+        return ButtonAccessory(url: url, text: button.text)
     }
 }
 
 /// Plain text section, used in the message body to send a simple text
 public struct PlainSection: PlainSectionConvertible, BlockConvertible {
     public var json: String {
-        if let accessory {
-            return """
-            { "type": "section", "text": { "type": "plain_text", "text": "\(plainText)" }, \(accessory.json) }
-            """
-        } else {
-            return """
-            { "type": "section", "text": { "type": "plain_text", "text": "\(plainText)" } }
-            """
-        }
+        let escaped = plainText.truncated(to: SlackLimits.sectionText).jsonEscaped
+        let text = #"{ "type": "section", "text": { "type": "plain_text", "text": "\#(escaped)" }"#
+
+        guard let accessoryJSON = accessory?.json else { return "\(text) }" }
+        return "\(text), \(accessoryJSON) }"
     }
 
     public let plainText: String
-    public let accessory: ImageAccessory?
+    public let accessory: Accessory?
 
-    public init(_ plainText: String, accessory: ImageAccessory? = nil) {
+    public init(_ plainText: String, accessory: Accessory? = nil) {
         self.plainText = plainText
         self.accessory = accessory
+    }
+
+    @available(*, deprecated, message: "Use init(_:accessory:) with .image instead")
+    public init(_ plainText: String, imageAccessory: ImageAccessory?) {
+        self.plainText = plainText
+        self.accessory = imageAccessory.map(Accessory.image)
+    }
+
+    @_disfavoredOverload
+    @available(*, deprecated, message: "Use init(_:accessory:) with .image instead")
+    public init(_ plainText: String, accessory: ImageAccessory?) {
+        self.plainText = plainText
+        self.accessory = accessory.map(Accessory.image)
+    }
+
+    @available(*, deprecated, message: "Use accessory and match .image")
+    public var imageAccessory: ImageAccessory? {
+        guard case .image(let image) = accessory else { return nil }
+        return image
     }
 }
 
@@ -95,9 +131,9 @@ public struct PlainSection: PlainSectionConvertible, BlockConvertible {
 /// 2 columns in a row on desktop, 1 column on mobile
 public struct FieldsSection: BlockConvertible {
     public var json: String {
-        let formattedSections = sections.map {
+        let formattedSections = sections.prefix(SlackLimits.fieldsPerSection).map {
             """
-            { "type": "mrkdwn", "text": "\($0.markdown)" }
+            { "type": "mrkdwn", "text": "\($0.markdown.truncated(to: SlackLimits.fieldText).jsonEscaped)" }
             """
         }.joined(separator: ", ")
 
@@ -115,18 +151,19 @@ public struct FieldsSection: BlockConvertible {
 
 public struct Image: BlockConvertible {
     public var json: String {
-        """
-        {
-            "type": "image",
-            "title": {
-                "type": "plain_text",
-                "text": "\(text)",
-                "emoji": true
-            },
-            "image_url": "\(url)",
-            "alt_text": "\(text)"
+        let title = text.truncated(to: SlackLimits.imageTitle).jsonEscaped
+        let alt = text.truncated(to: SlackLimits.imageAltText).jsonEscaped
+        var fields = [
+            #""type": "image""#,
+            #""image_url": "\#(url.truncated(to: SlackLimits.url).jsonEscaped)""#,
+            #""alt_text": "\#(alt)""#
+        ]
+
+        if !text.isEmpty {
+            fields.insert(#""title": { "type": "plain_text", "text": "\#(title)", "emoji": true }"#, at: 1)
         }
-        """
+
+        return "{ \(fields.joined(separator: ", ")) }"
     }
 
     public let url: String
@@ -139,14 +176,16 @@ public struct Image: BlockConvertible {
 }
 
 public struct ImageAccessory: Sendable {
+    @available(*, deprecated, message: "Use Accessory.image(_:) and pass it to a section's accessory:")
     public var json: String {
-        """
-        "accessory": {
-            "type": "image",
-            "image_url": "\(url)",
-            "alt_text": "\(text)"
-        }
-        """
+        #""accessory": \#(element)"#
+    }
+
+    public var element: String {
+        let alt = text.truncated(to: SlackLimits.imageAltText).jsonEscaped
+        let source = url.truncated(to: SlackLimits.url).jsonEscaped
+
+        return #"{ "type": "image", "image_url": "\#(source)", "alt_text": "\#(alt)" }"#
     }
 
     public let url: String
@@ -158,19 +197,10 @@ public struct ImageAccessory: Sendable {
     }
 }
 
+@available(*, deprecated, message: "Use Accessory.button(Button(_:url:)) and pass it to a section's accessory:")
 public struct ButtonAccessory: Sendable {
     public var json: String {
-        """
-        "accessory": {
-            "type": "button",
-            "text": {
-                "type": "plain_text",
-                "emoji": true,
-                "text": "\(text)"
-            },
-            "url": "\(url)"
-        }
-        """
+        #""accessory": \#(Button(text, url: url).json)"#
     }
 
     public let url: String
@@ -185,9 +215,9 @@ public struct ButtonAccessory: Sendable {
 /// Usually used at the bottom of the message to provide some kind of context, e.g. app version or branch
 public struct Context: BlockConvertible {
     public var json: String {
-        let elements = markdownElements.map {
+        let elements = markdownElements.prefix(SlackLimits.contextElements).map {
             """
-            { "type": "mrkdwn", "text": "\($0.markdown)" }
+            { "type": "mrkdwn", "text": "\($0.markdown.truncated(to: SlackLimits.contextText).jsonEscaped)" }
             """
         }.joined(separator: ", ")
 
@@ -207,31 +237,49 @@ public struct Context: BlockConvertible {
 ///
 /// When a `url` is provided, the button opens it in the browser on click.
 public struct Button: Sendable {
+
+    public enum Style: String, Sendable {
+        case primary
+        case danger
+    }
+
     public var json: String {
-        if let url {
-            return """
-            { "type": "button", "text": { "type": "plain_text", "text": "\(text)", "emoji": true }, "url": "\(url)" }
-            """
-        } else {
-            return """
-            { "type": "button", "text": { "type": "plain_text", "text": "\(text)", "emoji": true } }
-            """
+        let escaped = text.truncated(to: SlackLimits.buttonText).jsonEscaped
+        var fields = [
+            #""type": "button""#,
+            #""text": { "type": "plain_text", "text": "\#(escaped)", "emoji": true }"#
+        ]
+
+        if let url, !url.isEmpty {
+            fields.append(#""url": "\#(url.truncated(to: SlackLimits.url).jsonEscaped)""#)
         }
+        if let style {
+            fields.append(#""style": "\#(style.rawValue)""#)
+        }
+        if let actionId {
+            fields.append(#""action_id": "\#(actionId.truncated(to: SlackLimits.actionId).jsonEscaped)""#)
+        }
+
+        return "{ \(fields.joined(separator: ", ")) }"
     }
 
     public let text: String
     public let url: String?
+    public let style: Style?
+    public let actionId: String?
 
-    public init(_ text: String, url: String? = nil) {
+    public init(_ text: String, url: String? = nil, style: Style? = nil, actionId: String? = nil) {
         self.text = text
         self.url = url
+        self.style = style
+        self.actionId = actionId
     }
 }
 
 /// A block of interactive elements (currently buttons), rendered as a row of controls.
 public struct Actions: BlockConvertible {
     public var json: String {
-        let elements = buttons.map { $0.json }.joined(separator: ", ")
+        let elements = buttons.prefix(SlackLimits.elementsPerActions).map { $0.json }.joined(separator: ", ")
 
         return """
         { "type": "actions", "elements": [ \(elements) ] }
